@@ -1,16 +1,12 @@
 import React, { useState } from "react";
+import L621 from "../../img/621.png";
 import Carter from "../../img/carter.jpg";
 import Tyler from "../../img/tyler.jpg";
 import Will from "../../img/will.jpg";
-import {
-  IActionType,
-  IConnectionType,
-  IDiffEventList,
-  IEvent,
-  IGraphState,
-} from "../../types";
-import { applyAction } from "./reducers";
-import undoAction from "./undoers";
+import { IConnectionType, IEvent, IEventDiff, IGraphState } from "../../types";
+import { applyAction, IAction, IActionType } from "../actions/actions";
+import ActionPanel from "../actions/actions-panel/actions-panel";
+import { applyEvent, undoEvent } from "./functions";
 
 export const emptyGraphState: IGraphState = {
   time: 0,
@@ -24,11 +20,11 @@ const events: IEvent[] = [
     actions: [
       {
         type: IActionType.ADD_NODE,
-        payload: { id: "Tyler", x: 100, y: 100, img: Tyler },
+        payload: { id: "tyler", x: 100, y: 100, img: Tyler },
       },
       {
         type: IActionType.ADD_NODE,
-        payload: { id: "Carter", x: 300, y: 300, img: Carter },
+        payload: { id: "carter", x: 300, y: 300, img: Carter },
       },
     ],
   },
@@ -38,8 +34,8 @@ const events: IEvent[] = [
       {
         type: IActionType.ADD_CON,
         payload: {
-          startId: "Tyler",
-          endId: "Carter",
+          startId: "tyler",
+          endId: "carter",
           weight: 10,
           type: IConnectionType.FRIEND,
         },
@@ -51,7 +47,11 @@ const events: IEvent[] = [
     actions: [
       {
         type: IActionType.ADD_NODE,
-        payload: { id: "Will", x: 100, y: 300, img: Will },
+        payload: { id: "will", x: 100, y: 300, img: Will },
+      },
+      {
+        type: IActionType.ADD_NODE,
+        payload: { id: "621", x: 600, y: 300, img: L621 },
       },
     ],
   },
@@ -61,40 +61,44 @@ const events: IEvent[] = [
       {
         type: IActionType.EDIT_CON,
         payload: {
-          startId: "Tyler",
-          endId: "Carter",
+          startId: "tyler",
+          endId: "carter",
           dw: 10,
+        },
+      },
+      {
+        type: IActionType.RM_NODE,
+        payload: {
+          id: "621",
         },
       },
     ],
   },
 ];
 
-// process all of the events
-const eventDiffs: IDiffEventList = [];
+const eventDiffs: IEventDiff[] = [];
 
-for (let i = 0; i < events.length + 1; i++) {
-  // calculate how to get to events[i-1] from events[i]
-  let prevDiff: IEvent | null = null;
+let tempGraphState: IGraphState = emptyGraphState;
+let oldGraphState: IGraphState = emptyGraphState;
+
+for (let i = 0; i <= events.length; i++) {
+  const diff: IEventDiff = { prev: null, next: null };
+
   if (events[i - 1]) {
     const event = events[i - 1];
-    prevDiff = {
-      dTime: event.dTime * -1,
-      actions: event.actions.map(undoAction),
-    };
+    diff.prev = undoEvent(oldGraphState, event);
   }
 
-  // calculate how to get to events[i-1] from events[i]
-  let nextDiff: IEvent | null = null;
   if (events[i]) {
     const event = events[i];
-    nextDiff = { ...event };
+    diff.next = { ...event };
+
+    // now apply all of the actions to the graphState
+    oldGraphState = tempGraphState;
+    tempGraphState = applyEvent(tempGraphState, event);
   }
 
-  eventDiffs.push({
-    prev: prevDiff,
-    next: nextDiff,
-  });
+  eventDiffs.push(diff);
 }
 
 console.log(eventDiffs);
@@ -123,25 +127,39 @@ export default function Events(props: Props) {
   }
 
   function handleNext() {
-    const event: IEvent | null = eventDiffs[currentEventIndex].next;
-    if (event === null) {
+    const event = eventDiffs[currentEventIndex];
+    if (!event.next) {
       return;
     }
 
-    const newGraphState = applyEvent(event);
+    const newGraphState = applyEvent(event.next);
     updateGraphState(newGraphState);
     setCurrentEventIndex(currentEventIndex + 1);
   }
 
   function handlePrevious() {
-    const event: IEvent | null = eventDiffs[currentEventIndex].prev;
-    if (event === null) {
+    const event = eventDiffs[currentEventIndex];
+    if (!event.prev) {
       return;
     }
 
-    const newGraphState = applyEvent(event);
+    const newGraphState = applyEvent(event.prev);
     updateGraphState(newGraphState);
     setCurrentEventIndex(currentEventIndex - 1);
+  }
+
+  function handleNewAction(action: IAction) {
+    // apply this action to the previous event (only do thin on index > 1)
+    if (currentEventIndex === 0) {
+      return;
+    }
+
+    console.log(action);
+
+    const newGraphState = applyAction(graphState, action);
+    updateGraphState(newGraphState);
+
+    events[currentEventIndex - 1].actions.push(action);
   }
 
   return (
@@ -149,6 +167,12 @@ export default function Events(props: Props) {
       <button onClick={handlePrevious}> Previous </button>
       <button onClick={handleNext}> Next </button>
       {new Date(graphState.time).toDateString()}({graphState.time})
+      <ActionPanel
+        currentEvent={
+          currentEventIndex - 1 === -1 ? null : events[currentEventIndex - 1]
+        }
+        onNewAction={handleNewAction}
+      />
     </div>
   );
 }
