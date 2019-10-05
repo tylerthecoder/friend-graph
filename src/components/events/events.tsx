@@ -1,36 +1,30 @@
-import React, { useState } from "react";
-import { IEvent, IGraphState } from "../../types";
-import ActionPanel from "../actions/actions-panel/actions-panel";
+import React from "react";
+import { IEvent, IEventDiff, IGraphState } from "../../types";
+import "./events.css";
 import { applyEvent, calculateEventDiffs } from "./functions";
 
-import eventData from "../../events.json";
-
-export const emptyGraphState: IGraphState = {
-  time: 0,
-  connections: {},
-  nodes: {},
-};
+import eventData from "../../data/events.json";
 
 const events = eventData as IEvent[];
 
-const initialEventDiffs = calculateEventDiffs(events);
-
-console.log(initialEventDiffs);
+export const initialEventDiffs = calculateEventDiffs(events);
 
 interface Props {
-  onEventChange: (state: IGraphState) => void;
+  graphState: IGraphState;
+  currentEventIndex: number;
+  eventDiffs: IEventDiff[];
+  onGraphStateChange: (state: IGraphState) => void;
+  onIndexChange: (index: number) => void;
 }
 
 export default function Events(props: Props) {
-  const [currentEventIndex, setCurrentEventIndex] = useState(0);
-  const [graphState, setGraphState] = useState(emptyGraphState);
-  const [eventDiffs, setEventDiffs] = useState(initialEventDiffs);
-
-  function updateGraphState(state: IGraphState) {
-    console.log("Graph State", state);
-    setGraphState(state);
-    props.onEventChange(state);
-  }
+  const {
+    graphState,
+    eventDiffs,
+    currentEventIndex,
+    onGraphStateChange,
+    onIndexChange,
+  } = props;
 
   function handleNext() {
     const event = eventDiffs[currentEventIndex];
@@ -39,8 +33,8 @@ export default function Events(props: Props) {
     }
 
     const newGraphState = applyEvent(graphState, event.next);
-    updateGraphState(newGraphState);
-    setCurrentEventIndex(currentEventIndex + 1);
+    onGraphStateChange(newGraphState);
+    onIndexChange(currentEventIndex + 1);
   }
 
   function handlePrevious() {
@@ -50,8 +44,8 @@ export default function Events(props: Props) {
     }
 
     const newGraphState = applyEvent(graphState, event.prev);
-    updateGraphState(newGraphState);
-    setCurrentEventIndex(currentEventIndex - 1);
+    onGraphStateChange(newGraphState);
+    onIndexChange(currentEventIndex - 1);
   }
 
   return (
@@ -59,13 +53,6 @@ export default function Events(props: Props) {
       <button onClick={handlePrevious}> Previous </button>
       <button onClick={handleNext}> Next </button>
       {new Date(graphState.time).toDateString()}({graphState.time})
-      <ActionPanel
-        eventDiffs={eventDiffs}
-        currentEventIndex={currentEventIndex}
-        graphState={graphState}
-        onNewGraphState={updateGraphState}
-        onNewEventDiffList={setEventDiffs}
-      />
     </div>
   );
 }

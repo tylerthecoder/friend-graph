@@ -82,8 +82,9 @@ export default function ActionForm(props: Props) {
   }
 
   function handleSubmitAction() {
-    const action = {
+    const action: IAction = {
       type: actionType,
+      id: "",
       payload: formState as IActionPayload,
     };
 

@@ -2,10 +2,10 @@ import { IGraphState } from "../../../types";
 import {
   IAction,
   IActionFunctions,
+  IActionProperty,
   IActionType,
   IInput,
   IValidationResponse,
-  IActionProperty,
 } from "../actions";
 
 export interface IRmConAction {
@@ -46,6 +46,7 @@ export default class RmCon implements IActionFunctions {
     const id = `${payload.startId}:${payload.endId}`;
     const connection = prevState.connections[id];
     return {
+      ...action,
       type: IActionType.ADD_CON,
       payload: {
         ...connection,

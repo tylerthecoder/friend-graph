@@ -46,6 +46,7 @@ export default class AddCon implements IActionFunctions {
   public undoAction(_prevState: IGraphState, action: IAction): IAction {
     const payload = this.getPayload(action);
     return {
+      ...action,
       type: IActionType.RM_CON,
       payload: {
         startId: payload.startId,

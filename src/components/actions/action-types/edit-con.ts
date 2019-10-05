@@ -47,6 +47,7 @@ export default class EditCon implements IActionFunctions {
   public undoAction(_prevState: IGraphState, action: IAction): IAction {
     const payload = action.payload as IEditConnectionAction;
     return {
+      ...action,
       type: IActionType.EDIT_CON,
       payload: {
         ...payload,

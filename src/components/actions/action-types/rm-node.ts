@@ -35,6 +35,7 @@ export default class RmNode implements IActionFunctions {
     const payload = action.payload as IRmNodeAction;
     const node = prevState.nodes[payload.id];
     return {
+      ...action,
       type: IActionType.ADD_NODE,
       payload: {
         ...node,

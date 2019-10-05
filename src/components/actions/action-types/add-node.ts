@@ -46,6 +46,7 @@ export default class AddNode implements IActionFunctions {
   public undoAction(_prevState: IGraphState, action: IAction): IAction {
     const payload = action.payload as IAddNodeAction;
     return {
+      ...action,
       type: IActionType.RM_NODE,
       payload: {
         id: payload.id,

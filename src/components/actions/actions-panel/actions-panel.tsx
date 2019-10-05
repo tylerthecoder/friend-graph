@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { IEventDiff, IGraphState } from "../../../types";
 import ActionForm from "../action-form/action-form";
+import ActionViewer from "../action-viewer/action-viewer";
 import {
   applyAction,
   cleanupEventDiffs,
@@ -25,13 +26,20 @@ export default function ActionPanel(props: Props) {
     onNewEventDiffList,
     graphState,
   } = props;
-  const currentEvent =
+  const prevEvent =
     currentEventIndex === 0 ? null : eventDiffs[currentEventIndex - 1].next;
+  const nextEvent =
+    currentEventIndex === eventDiffs.length - 1
+      ? null
+      : eventDiffs[currentEventIndex + 1].next;
 
   const [openedFormIndex, setOpenedFormIndex] = useState(-1);
 
   function handleNewAction(action: IAction) {
     console.log("Adding Action", action);
+
+    // apply a unique id to the action
+    action.id = `${Math.random()}:${Math.random()}`;
 
     const newGraphState = applyAction(graphState, action);
 
@@ -63,11 +71,20 @@ export default function ActionPanel(props: Props) {
           graphState={graphState}
         />
       ))}
+      <br />
       <div>
-        <p> Last Events </p>
-        {currentEvent &&
-          currentEvent.actions.map((action, index) => (
-            <p key={index}>{JSON.stringify(action)}</p>
+        <p> Prev Events </p>
+        {prevEvent &&
+          prevEvent.actions.map((action) => (
+            <ActionViewer key={action.id} action={action} />
+          ))}
+      </div>
+      <br />
+      <div>
+        <p> Next Events </p>
+        {nextEvent &&
+          nextEvent.actions.map((action) => (
+            <ActionViewer key={action.id} action={action} />
           ))}
       </div>
     </div>

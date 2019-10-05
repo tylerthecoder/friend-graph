@@ -60,6 +60,7 @@ export type IActionPayload =
 
 export interface IAction {
   type: IActionType;
+  id: string;
   payload: IActionPayload;
 }
 

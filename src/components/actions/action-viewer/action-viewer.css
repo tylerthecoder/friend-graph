@@ -1,0 +1,9 @@
+.action-viewer {
+  border-top: 2px dotted black;
+  border-bottom: 2px dotted black;
+}
+
+.action-viewer h1 {
+  text-align: center;
+  font-size: 1.1em;
+}

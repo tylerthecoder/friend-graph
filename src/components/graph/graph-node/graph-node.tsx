@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
-import { friendNodeRadius, moveSpeed } from "../../constants";
-import useDiffAnimation from "../../hooks/diff-animation";
+import { friendNodeRadius, moveSpeed } from "../../../constants";
+import useDiffAnimation from "../../../hooks/diff-animation";
 
 interface Props {
   x: number;
@@ -8,7 +8,7 @@ interface Props {
   img: string;
 }
 
-export default function FriendNode(props: Props) {
+export default function GraphNode(props: Props) {
   const { current: pos, setNewValue: setPos } = useDiffAnimation(
     { x: props.x, y: props.y },
     moveSpeed,

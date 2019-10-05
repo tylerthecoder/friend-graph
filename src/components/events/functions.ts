@@ -1,6 +1,11 @@
 import { IEvent, IEventDiff, IGraphState } from "../../types";
 import { applyAction, undoAction } from "../actions/actions";
-import { emptyGraphState } from "./events";
+
+export const emptyGraphState: IGraphState = {
+  time: 0,
+  connections: {},
+  nodes: {},
+};
 
 export function calculateEventDiffs(events: IEvent[]): IEventDiff[] {
   const eventDiffs: IEventDiff[] = [];

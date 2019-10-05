@@ -1,40 +1,48 @@
 import React, { useState } from "react";
-import { IConnection, IGraphState } from "../../types";
-import Connection from "../connection/connection";
-import Events, { emptyGraphState } from "../events/events";
-import FriendNode from "../friend-node/friend-node";
+import { IEventDiff, IGraphState } from "../../types";
+import ActionPanel from "../actions/actions-panel/actions-panel";
+import Events, { initialEventDiffs } from "../events/events";
+import { emptyGraphState } from "../events/functions";
+import Graph from "../graph/graph";
 import "./app.css";
 
 function App() {
   const [graphState, setGraphState] = useState(emptyGraphState);
+  const [eventDiffs, setEventDiffs] = useState(initialEventDiffs);
+  const [currentEventIndex, setCurrentEventIndex] = useState(0);
 
-  function toConnectionProps(connection: IConnection) {
-    const startFriend = graphState.nodes[connection.startId];
-    const endFriend = graphState.nodes[connection.endId];
-    return {
-      ...connection,
-      thickness: connection.weight,
-      startFriend,
-      endFriend,
-      key: `${startFriend.id},${endFriend.id}`,
-    };
+  function updateGraphState(state: IGraphState) {
+    console.log("Graph State", state);
+    setGraphState(state);
   }
 
-  function handleNewGraphState(state: IGraphState) {
-    setGraphState(state);
+  function updateEventDiffs(diffs: IEventDiff[]) {
+    console.log("Event Diffs", diffs);
+    setEventDiffs(diffs);
+  }
+
+  function updateCurrentEventIndex(index: number) {
+    console.log("Event Index", index);
+    setCurrentEventIndex(index);
   }
 
   return (
     <div className="App">
-      <Events onEventChange={handleNewGraphState} />
-      <svg id="friendGraph">
-        {Object.values(graphState.nodes).map((friend) => (
-          <FriendNode {...friend} key={friend.id} />
-        ))}
-        {Object.values(graphState.connections).map((connection) => (
-          <Connection {...toConnectionProps(connection)} />
-        ))}
-      </svg>
+      <Events
+        graphState={graphState}
+        currentEventIndex={currentEventIndex}
+        eventDiffs={eventDiffs}
+        onIndexChange={updateCurrentEventIndex}
+        onGraphStateChange={updateGraphState}
+      />
+      <Graph graphState={graphState} />
+      <ActionPanel
+        eventDiffs={eventDiffs}
+        currentEventIndex={currentEventIndex}
+        graphState={graphState}
+        onNewGraphState={updateGraphState}
+        onNewEventDiffList={updateEventDiffs}
+      />
     </div>
   );
 }
