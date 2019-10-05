@@ -1,5 +1,12 @@
 import { IGraphState } from "../../../types";
-import { IAction, IActionType, IInput } from "../actions";
+import {
+  IAction,
+  IActionFunctions,
+  IActionProperty,
+  IActionType,
+  IInput,
+  IValidationResponse,
+} from "../actions";
 
 export interface IEditNodeAction {
   id: string;
@@ -7,35 +14,51 @@ export interface IEditNodeAction {
   dy: number;
 }
 
-export const formElements: IInput[] = [
-  { type: "number", id: "dx" },
-  { type: "number", id: "dy" },
-  { type: "text", id: "id" },
-];
+export default class EditNode implements IActionFunctions {
+  public properties = [
+    { label: "id", type: IActionProperty.ID },
+    { label: "dx", type: IActionProperty.NUM },
+    { label: "dy", type: IActionProperty.NUM },
+  ];
 
-export function applyAction(state: IGraphState, action: IAction): IGraphState {
-  const payload = action.payload as IEditNodeAction;
-  return {
-    ...state,
-    nodes: {
-      ...state.nodes,
-      [payload.id]: {
-        ...state.nodes[payload.id],
-        x: state.nodes[payload.id].x + payload.dx,
-        y: state.nodes[payload.id].y + payload.dy,
+  public formElements: IInput[] = [
+    { type: "number", id: "dx" },
+    { type: "number", id: "dy" },
+    { type: "id", id: "id" },
+  ];
+
+  public buttonText = "Edit Node";
+
+  public applyAction(state: IGraphState, action: IAction): IGraphState {
+    const payload = action.payload as IEditNodeAction;
+    return {
+      ...state,
+      nodes: {
+        ...state.nodes,
+        [payload.id]: {
+          ...state.nodes[payload.id],
+          x: state.nodes[payload.id].x + payload.dx,
+          y: state.nodes[payload.id].y + payload.dy,
+        },
       },
-    },
-  };
-}
+    };
+  }
 
-export function undoAction(_prevState: IGraphState, action: IAction): IAction {
-  const payload = action.payload as IEditNodeAction;
-  return {
-    type: IActionType.EDIT_NODE,
-    payload: {
-      ...payload,
-      dx: payload.dx * -1,
-      dy: payload.dy * -1,
-    },
-  };
+  public undoAction(_prevState: IGraphState, action: IAction): IAction {
+    const payload = action.payload as IEditNodeAction;
+    return {
+      type: IActionType.EDIT_NODE,
+      payload: {
+        ...payload,
+        dx: payload.dx * -1,
+        dy: payload.dy * -1,
+      },
+    };
+  }
+
+  public validate(_state: IGraphState, _action: IAction): IValidationResponse {
+    return {
+      isValid: true,
+    };
+  }
 }

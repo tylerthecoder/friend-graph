@@ -1,39 +1,62 @@
 import { IGraphState } from "../../../types";
-import { IAction, IActionType, IInput } from "../actions";
+import {
+  IAction,
+  IActionFunctions,
+  IActionType,
+  IInput,
+  IValidationResponse,
+  IActionProperty,
+} from "../actions";
 
 export interface IRmConAction {
   startId: string;
   endId: string;
 }
 
-export const formElements: IInput[] = [
-  { type: "text", id: "startId" },
-  { type: "text", id: "endId" },
-  { type: "number", id: "dw" },
-];
+export default class RmCon implements IActionFunctions {
+  public properties = [
+    { label: "startId", type: IActionProperty.ID },
+    { label: "endId", type: IActionProperty.ID },
+    { label: "dw", type: IActionProperty.NUM },
+  ];
 
-export function applyAction(state: IGraphState, action: IAction): IGraphState {
-  const payload = action.payload as IRmConAction;
-  const id = `${payload.startId}:${payload.endId}`;
-  const newState = {
-    ...state,
-    connections: {
-      ...state.connections,
-    },
-  };
-  delete newState.connections[id];
-  return newState;
-}
+  public formElements: IInput[] = [
+    { type: "id", id: "startId" },
+    { type: "id", id: "endId" },
+    { type: "number", id: "dw" },
+  ];
 
-export function undoAction(prevState: IGraphState, action: IAction): IAction {
-  const payload = action.payload as IRmConAction;
-  const id = `${payload.startId}:${payload.endId}`;
-  const connection = prevState.connections[id];
-  return {
-    type: IActionType.ADD_CON,
-    payload: {
-      ...connection,
-      ...payload,
-    },
-  };
+  public buttonText = "Remove Connection";
+
+  public applyAction(state: IGraphState, action: IAction): IGraphState {
+    const payload = action.payload as IRmConAction;
+    const id = `${payload.startId}:${payload.endId}`;
+    const newState = {
+      ...state,
+      connections: {
+        ...state.connections,
+      },
+    };
+    delete newState.connections[id];
+    return newState;
+  }
+
+  public undoAction(prevState: IGraphState, action: IAction): IAction {
+    const payload = action.payload as IRmConAction;
+    const id = `${payload.startId}:${payload.endId}`;
+    const connection = prevState.connections[id];
+    return {
+      type: IActionType.ADD_CON,
+      payload: {
+        ...connection,
+        ...payload,
+      },
+    };
+  }
+
+  public validate(_state: IGraphState, _action: IAction): IValidationResponse {
+    return {
+      isValid: true,
+    };
+  }
 }

@@ -2,8 +2,9 @@
   position: absolute;
   right: 0px;
   height: 100%;
-  width: 200px;
+  width: 250px;
   top: 0px;
   border-left: 2px black solid;
   word-wrap: break-word;
+  overflow-y: auto;
 }

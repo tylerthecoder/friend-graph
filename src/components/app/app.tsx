@@ -27,7 +27,7 @@ function App() {
   return (
     <div className="App">
       <Events onEventChange={handleNewGraphState} />
-      <svg>
+      <svg id="friendGraph">
         {Object.values(graphState.nodes).map((friend) => (
           <FriendNode {...friend} key={friend.id} />
         ))}

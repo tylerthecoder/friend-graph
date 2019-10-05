@@ -1,0 +1,16 @@
+.action-form .collapsed {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  border-top: 2px dotted black;
+  border-bottom: 2px dotted black;
+}
+
+.action-form .collapsed:hover {
+  background-color: lightblue;
+}
+
+.action-form .form-content {
+  padding: 3px;
+}

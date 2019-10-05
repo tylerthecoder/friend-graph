@@ -8,8 +8,8 @@ export interface INode {
 }
 
 export enum IConnectionType {
-  FRIEND,
-  LIVES,
+  FRIEND = "FRIEND",
+  LIVES = "LIVES",
 }
 
 export interface IConnection {

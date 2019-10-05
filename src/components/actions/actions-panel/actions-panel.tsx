@@ -1,34 +1,68 @@
-import React from "react";
-import { IEvent } from "../../../types";
+import React, { useState } from "react";
+import { IEventDiff, IGraphState } from "../../../types";
 import ActionForm from "../action-form/action-form";
-import { IAction, IActionType } from "../actions";
+import {
+  applyAction,
+  cleanupEventDiffs,
+  IAction,
+  IActionType,
+} from "../actions";
 import "./actions-panel.css";
 
 interface Props {
-  currentEvent: IEvent | null;
-  onNewAction: (action: IAction) => void;
+  graphState: IGraphState;
+  eventDiffs: IEventDiff[];
+  currentEventIndex: number;
+  onNewGraphState: (state: IGraphState) => void;
+  onNewEventDiffList: (state: IEventDiff[]) => void;
 }
 
 export default function ActionPanel(props: Props) {
-  const { currentEvent, onNewAction } = props;
+  const {
+    eventDiffs,
+    currentEventIndex,
+    onNewGraphState,
+    onNewEventDiffList,
+    graphState,
+  } = props;
+  const currentEvent =
+    currentEventIndex === 0 ? null : eventDiffs[currentEventIndex - 1].next;
+
+  const [openedFormIndex, setOpenedFormIndex] = useState(-1);
+
+  function handleNewAction(action: IAction) {
+    console.log("Adding Action", action);
+
+    const newGraphState = applyAction(graphState, action);
+
+    // clean up the eventList if need be
+    // for example, if I just deleted a node, make sure that all
+    // later connections for that node are also deleted
+    const newEventDiffs = cleanupEventDiffs(
+      eventDiffs,
+      currentEventIndex,
+      newGraphState,
+      action,
+    );
+
+    console.log("New Event Diffs", newEventDiffs);
+
+    onNewGraphState(newGraphState);
+    onNewEventDiffList(newEventDiffs);
+  }
 
   return (
     <div id="action-panel">
-      <ActionForm
-        onAction={(action) => onNewAction(action)}
-        actionType={IActionType.ADD_NODE}
-        buttonText={"Add Node"}
-      />
-      <ActionForm
-        onAction={(action) => onNewAction(action)}
-        actionType={IActionType.ADD_CON}
-        buttonText={"Add Connection"}
-      />
-      <ActionForm
-        onAction={(action) => onNewAction(action)}
-        actionType={IActionType.RM_NODE}
-        buttonText={"Remove Node"}
-      />
+      {Object.values(IActionType).map((actionType, index) => (
+        <ActionForm
+          key={index}
+          onAction={handleNewAction}
+          shown={index === openedFormIndex}
+          onOpen={() => setOpenedFormIndex(index)}
+          actionType={actionType}
+          graphState={graphState}
+        />
+      ))}
       <div>
         <p> Last Events </p>
         {currentEvent &&
