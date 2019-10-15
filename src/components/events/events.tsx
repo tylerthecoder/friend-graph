@@ -38,10 +38,6 @@ export default function Events(props: Props) {
   );
 
   const event = eventDiffs[currentEventIndex];
-  if (!event) {
-    console.log("Event Does not Exist");
-    return;
-  }
 
   const diffIndex = currentEventIndex - displayedEventIndex;
 

@@ -15,7 +15,6 @@ interface Props {
 }
 
 export default function PositionSelector(props: Props) {
-  const { onValueChange } = props;
   const [selecting, setSelected] = useState(false);
   const [mousePos, setMousePos] = useState(defaultCoords);
 
@@ -29,7 +28,7 @@ export default function PositionSelector(props: Props) {
           y: offsetY,
         };
         setMousePos(pos);
-        onValueChange(pos);
+        props.onValueChange(pos);
         setSelected(false);
       };
 
@@ -61,7 +60,7 @@ export default function PositionSelector(props: Props) {
           .removeEventListener("mousemove", handleSvgHover);
       };
     }
-  }, [selecting]);
+  });
 
   function handleSelectButton() {
     setSelected(true);

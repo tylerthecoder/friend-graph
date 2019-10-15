@@ -39,7 +39,7 @@ export function calculateEventDiffs(events: IEvent[]): IEventDiff[] {
 export function applyEvent(state: IGraphState, event: IEvent): IGraphState {
   const newGraphState = event.actions.reduce(
     (state, action) => applyAction(state, action),
-    state,
+    { ...state },
   );
   newGraphState.time += event.dTime;
   return newGraphState;

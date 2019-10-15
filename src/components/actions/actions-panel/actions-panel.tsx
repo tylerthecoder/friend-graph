@@ -40,7 +40,6 @@ export default function ActionPanel(props: Props) {
     data: { [id: string]: any },
   ) {
     const payload = formToAction(actionType, data);
-    console.log(payload);
 
     const action = {
       // apply a unique id to the action
@@ -50,7 +49,6 @@ export default function ActionPanel(props: Props) {
     };
 
     const newGraphState = applyAction(graphState, action);
-
     // clean up the eventList if need be
     // for example, if I just deleted a node, make sure that all
     // later connections for that node are also deleted
