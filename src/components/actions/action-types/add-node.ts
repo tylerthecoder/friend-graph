@@ -2,6 +2,7 @@ import { IGraphState } from "../../../types";
 import {
   IAction,
   IActionFunctions,
+  IActionPayload,
   IActionProperty,
   IActionType,
   IInput,
@@ -24,16 +25,24 @@ export default class AddNode implements IActionFunctions {
   ];
 
   public formElements: IInput[] = [
-    { type: "number", id: "x" },
-    { type: "number", id: "y" },
+    { type: "pos", id: "pos" },
     { type: "img", id: "img" },
     { type: "text", id: "id" },
   ];
 
   public buttonText = "Add Node";
 
+  public formToAction(data: { [id: string]: any }): IAddNodeAction {
+    return {
+      id: data.id,
+      img: data.img,
+      x: data.pos.x,
+      y: data.pos.y,
+    };
+  }
+
   public applyAction(state: IGraphState, action: IAction): IGraphState {
-    const payload = action.payload as IAddNodeAction;
+    const payload = this.getPayload(action);
     return {
       ...state,
       nodes: {
@@ -44,7 +53,7 @@ export default class AddNode implements IActionFunctions {
   }
 
   public undoAction(_prevState: IGraphState, action: IAction): IAction {
-    const payload = action.payload as IAddNodeAction;
+    const payload = this.getPayload(action);
     return {
       ...action,
       type: IActionType.RM_NODE,
@@ -54,8 +63,11 @@ export default class AddNode implements IActionFunctions {
     };
   }
 
-  public validate(state: IGraphState, action: IAction): IValidationResponse {
-    const payload = action.payload as IAddNodeAction;
+  public validate(
+    state: IGraphState,
+    data: IActionPayload,
+  ): IValidationResponse {
+    const payload = data as IAddNodeAction;
     const condition = Object.values(state.nodes).every(
       (node) => node.id !== payload.id,
     );
@@ -69,5 +81,9 @@ export default class AddNode implements IActionFunctions {
         message: "Id already exists",
       };
     }
+  }
+
+  private getPayload(action: IAction) {
+    return action.payload as IAddNodeAction;
   }
 }

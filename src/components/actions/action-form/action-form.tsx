@@ -1,19 +1,23 @@
 import React, { useEffect, useState } from "react";
-import imgs from "../../../data/imgs.json";
 import { IGraphState } from "../../../types";
 import {
   getActionInputs,
   getButtonText,
-  IAction,
   IActionPayload,
   IActionType,
+  IFormData,
   IInput,
   validateAction,
 } from "../actions";
 import "./action-form.css";
+import IdSelector from "./action-inputs/id-selector";
+import ImgSelector from "./action-inputs/img-selector";
+import NumberInput from "./action-inputs/number-input";
+import PositionSelector from "./action-inputs/position-selector";
+import TextInput from "./action-inputs/text-input";
 
 interface Props {
-  onAction: (action: IAction) => void;
+  onSubmit: (formData: { [id: string]: any }) => void;
   shown: boolean;
   onOpen: () => void;
   graphState: IGraphState;
@@ -21,11 +25,11 @@ interface Props {
 }
 
 export default function ActionForm(props: Props) {
-  const { actionType, onAction, onOpen, graphState, shown } = props;
+  const { actionType, onOpen, graphState, shown, onSubmit } = props;
   const inputs = getActionInputs(actionType);
   const nodeIds = Object.values(graphState.nodes).map((node) => node.id);
 
-  function getDefaultFormState(inputs: IInput[]): { [id: string]: any } {
+  function getDefaultFormState(inputs: IInput[]): IFormData {
     const res: { [id: string]: any } = {};
     inputs.forEach((input) => {
       let defaultVal: any;
@@ -44,16 +48,6 @@ export default function ActionForm(props: Props) {
       res[input.id] = defaultVal;
     });
 
-    inputs
-      .filter((input) => input.type === "id")
-      .forEach((input) => {
-        res[input.id] = nodeIds[0];
-      });
-
-    inputs
-      .filter((input) => input.type === "img")
-      .forEach((input) => (res[input.id] = imgs[0].name));
-
     return res;
   }
 
@@ -65,32 +59,21 @@ export default function ActionForm(props: Props) {
     setFormState(getDefaultFormState(inputs));
   }, [graphState.nodes, inputs]);
 
-  function handleChange(
-    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) {
-    let value: number | string;
-    if (event.target.type === "number") {
-      value = Number(event.target.value);
-    } else {
-      value = event.target.value;
-    }
-    const newState = {
+  function setFormElementState(id: string, value: any) {
+    setFormState({
       ...formState,
-      [event.target.id]: value,
-    };
-    setFormState(newState);
+      [id]: value,
+    });
   }
 
   function handleSubmitAction() {
-    const action: IAction = {
-      type: actionType,
-      id: "",
-      payload: formState as IActionPayload,
-    };
-
-    const validation = validateAction(graphState, action);
+    const validation = validateAction(
+      graphState,
+      actionType,
+      formState as IActionPayload,
+    );
     if (validation.isValid) {
-      onAction(action);
+      onSubmit(formState);
     } else {
       alert(validation.message);
     }
@@ -103,35 +86,30 @@ export default function ActionForm(props: Props) {
           <p>{buttonText}</p>
           {inputs.map((input) => (
             <div key={input.id}>
-              <span> {input.id} </span>
               {input.type === "id" ? (
-                <select
-                  id={input.id}
-                  onChange={handleChange}
-                  value={formState[input.id]}
-                >
-                  {nodeIds.map((id) => (
-                    <option key={id}>{id}</option>
-                  ))}
-                </select>
+                <IdSelector
+                  ids={nodeIds}
+                  label={input.id}
+                  onValueChange={(val) => setFormElementState(input.id, val)}
+                />
               ) : input.type === "img" ? (
-                <select
-                  id={input.id}
-                  onChange={handleChange}
-                  value={formState[input.id]}
-                >
-                  {imgs.map((img) => (
-                    <option key={img.name} value={img.url}>
-                      {img.name}
-                    </option>
-                  ))}
-                </select>
+                <ImgSelector
+                  onValueChange={(val) => setFormElementState(input.id, val)}
+                  label={input.id}
+                />
+              ) : input.type === "pos" ? (
+                <PositionSelector
+                  onValueChange={(val) => setFormElementState(input.id, val)}
+                />
+              ) : input.type === "text" ? (
+                <TextInput
+                  label={input.id}
+                  onValueChange={(val) => setFormElementState(input.id, val)}
+                />
               ) : (
-                <input
-                  id={input.id}
-                  type={input.type}
-                  onChange={handleChange}
-                  value={formState[input.id]}
+                <NumberInput
+                  label={input.id}
+                  onValueChange={(val) => setFormElementState(input.id, val)}
                 />
               )}
             </div>

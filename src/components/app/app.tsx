@@ -26,16 +26,24 @@ function App() {
     setCurrentEventIndex(index);
   }
 
+  function updateDate() {
+    console.log("Change Date");
+  }
+
   return (
-    <div className="App">
-      <Events
-        graphState={graphState}
-        currentEventIndex={currentEventIndex}
-        eventDiffs={eventDiffs}
-        onIndexChange={updateCurrentEventIndex}
-        onGraphStateChange={updateGraphState}
-      />
-      <Graph graphState={graphState} />
+    <div className="app">
+      <div className="left-panel">
+        <Events
+          graphState={graphState}
+          currentEventIndex={currentEventIndex}
+          eventDiffs={eventDiffs}
+          onIndexChange={updateCurrentEventIndex}
+          onGraphStateChange={updateGraphState}
+          onEventDiffChange={updateEventDiffs}
+          onDateChange={updateDate}
+        />
+        <Graph graphState={graphState} />
+      </div>
       <ActionPanel
         eventDiffs={eventDiffs}
         currentEventIndex={currentEventIndex}

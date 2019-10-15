@@ -2,8 +2,10 @@ import { IGraphState } from "../../../types";
 import {
   IAction,
   IActionFunctions,
+  IActionPayload,
   IActionProperty,
   IActionType,
+  IFormData,
   IInput,
   IValidationResponse,
 } from "../actions";
@@ -17,16 +19,21 @@ export default class RmCon implements IActionFunctions {
   public properties = [
     { label: "startId", type: IActionProperty.ID },
     { label: "endId", type: IActionProperty.ID },
-    { label: "dw", type: IActionProperty.NUM },
   ];
 
   public formElements: IInput[] = [
     { type: "id", id: "startId" },
     { type: "id", id: "endId" },
-    { type: "number", id: "dw" },
   ];
 
   public buttonText = "Remove Connection";
+
+  public formToAction(data: IFormData) {
+    return {
+      startId: data.startId,
+      endId: data.endId,
+    };
+  }
 
   public applyAction(state: IGraphState, action: IAction): IGraphState {
     const payload = action.payload as IRmConAction;
@@ -55,7 +62,10 @@ export default class RmCon implements IActionFunctions {
     };
   }
 
-  public validate(_state: IGraphState, _action: IAction): IValidationResponse {
+  public validate(
+    _state: IGraphState,
+    _action: IActionPayload,
+  ): IValidationResponse {
     return {
       isValid: true,
     };

@@ -9,7 +9,11 @@ import RmNode, { IRmNodeAction } from "./action-types/rm-node";
 
 export interface IInput {
   id: string;
-  type: "text" | "number" | "id" | "img";
+  type: "text" | "number" | "id" | "img" | "pos";
+}
+
+export interface IFormData {
+  [id: string]: any;
 }
 
 export enum IActionType {
@@ -33,23 +37,6 @@ export interface IValidationResponse {
   message?: string;
 }
 
-export interface IActionFunctions {
-  formElements: IInput[];
-  buttonText: string;
-  properties: Array<{
-    label: string;
-    type: IActionProperty;
-  }>;
-  applyAction: (state: IGraphState, action: IAction) => IGraphState;
-  undoAction: (prevState: IGraphState, action: IAction) => IAction;
-  validate: (state: IGraphState, action: IAction) => IValidationResponse;
-  removeActions?: (
-    eventDiffs: IEventDiff[],
-    action: IAction,
-    index: number,
-  ) => void;
-}
-
 export type IActionPayload =
   | IAddNodeAction
   | IRmNodeAction
@@ -62,6 +49,27 @@ export interface IAction {
   type: IActionType;
   id: string;
   payload: IActionPayload;
+}
+
+export interface IActionFunctions {
+  formElements: IInput[];
+  buttonText: string;
+  properties: Array<{
+    label: string;
+    type: IActionProperty;
+  }>;
+  formToAction: (data: IFormData) => IActionPayload;
+  applyAction: (state: IGraphState, action: IAction) => IGraphState;
+  undoAction: (prevState: IGraphState, action: IAction) => IAction;
+  validate: (
+    state: IGraphState,
+    payload: IActionPayload,
+  ) => IValidationResponse;
+  removeActions?: (
+    eventDiffs: IEventDiff[],
+    action: IAction,
+    index: number,
+  ) => void;
 }
 
 const actionTypesToActions: Map<IActionType, IActionFunctions> = new Map();
@@ -95,9 +103,10 @@ export function undoAction(prevState: IGraphState, action: IAction): IAction {
 
 export function validateAction(
   state: IGraphState,
-  action: IAction,
+  type: IActionType,
+  payload: IActionPayload,
 ): IValidationResponse {
-  return getActionFunctions(action.type).validate(state, action);
+  return getActionFunctions(type).validate(state, payload);
 }
 
 export function cleanupEventDiffs(
@@ -148,6 +157,13 @@ export function getActionInputs(actionType: IActionType): IInput[] {
 
 export function getButtonText(actionType: IActionType): string {
   return getActionFunctions(actionType).buttonText;
+}
+
+export function formToAction(
+  actionType: IActionType,
+  data: { [id: string]: any },
+) {
+  return getActionFunctions(actionType).formToAction!(data);
 }
 
 // Helper Functions

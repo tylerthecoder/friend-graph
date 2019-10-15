@@ -5,7 +5,7 @@ import ActionViewer from "../action-viewer/action-viewer";
 import {
   applyAction,
   cleanupEventDiffs,
-  IAction,
+  formToAction,
   IActionType,
 } from "../actions";
 import "./actions-panel.css";
@@ -31,15 +31,23 @@ export default function ActionPanel(props: Props) {
   const nextEvent =
     currentEventIndex === eventDiffs.length - 1
       ? null
-      : eventDiffs[currentEventIndex + 1].next;
+      : eventDiffs[currentEventIndex].next;
 
   const [openedFormIndex, setOpenedFormIndex] = useState(-1);
 
-  function handleNewAction(action: IAction) {
-    console.log("Adding Action", action);
+  function handleFormSubmit(
+    actionType: IActionType,
+    data: { [id: string]: any },
+  ) {
+    const payload = formToAction(actionType, data);
+    console.log(payload);
 
-    // apply a unique id to the action
-    action.id = `${Math.random()}:${Math.random()}`;
+    const action = {
+      // apply a unique id to the action
+      id: `${Math.random()}:${Math.random()}`,
+      type: actionType,
+      payload,
+    };
 
     const newGraphState = applyAction(graphState, action);
 
@@ -64,7 +72,7 @@ export default function ActionPanel(props: Props) {
       {Object.values(IActionType).map((actionType, index) => (
         <ActionForm
           key={index}
-          onAction={handleNewAction}
+          onSubmit={(data) => handleFormSubmit(actionType, data)}
           shown={index === openedFormIndex}
           onOpen={() => setOpenedFormIndex(index)}
           actionType={actionType}

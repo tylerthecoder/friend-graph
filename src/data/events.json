@@ -11,81 +11,41 @@
           "y": 100,
           "img": "/img/tyler.jpg"
         }
-      },
+      }
+    ]
+  },
+  {
+    "dTime": 86400000,
+    "actions": [
       {
         "type": "ADD_NODE",
         "id": "2",
         "payload": {
           "id": "carter",
           "x": 300,
-          "y": 300,
+          "y": 100,
           "img": "/img/carter.jpg"
         }
       }
     ]
   },
   {
-    "dTime": 86400000,
-    "actions": [
-      {
-        "type": "ADD_CON",
-        "id": "3",
-        "payload": {
-          "startId": "tyler",
-          "endId": "carter",
-          "weight": 10,
-          "type": "FRIEND"
-        }
-      }
-    ]
-  },
-  {
-    "dTime": 86400000,
+    "dTime": 172800000,
     "actions": [
       {
         "type": "ADD_NODE",
         "id": "4",
-        "payload": { "id": "will", "x": 100, "y": 300, "img": "/img/will.jpg" }
-      },
+        "payload": { "id": "will", "x": 300, "y": 300, "img": "/img/will.jpg" }
+      }
+    ]
+  },
+  {
+    "dTime": 86400000,
+    "actions": [
       {
         "type": "ADD_NODE",
         "id": "5",
-        "payload": { "id": "621", "x": 600, "y": 300, "img": "/img/621.png" }
-      }
-    ]
-  },
-  {
-    "dTime": 86400000,
-    "actions": [
-      {
-        "type": "EDIT_CON",
-        "id": "6",
-        "payload": {
-          "startId": "tyler",
-          "endId": "carter",
-          "dw": 10
-        }
-      },
-      {
-        "type": "RM_NODE",
-        "id": "7",
-        "payload": {
-          "id": "621"
-        }
-      }
-    ]
-  },
-  {
-    "dTime": 86400000,
-    "actions": [
-      {
-        "type": "EDIT_NODE",
-        "id": "8",
-        "payload": {
-          "id": "tyler",
-          "dx": 400,
-          "dy": 0
-        }
+        "payload": { "id": "621", "x": 100, "y": 300, "img": "/img/621.png" }
       }
     ]
   }

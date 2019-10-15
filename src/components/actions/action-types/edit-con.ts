@@ -2,8 +2,10 @@ import { IGraphState } from "../../../types";
 import {
   IAction,
   IActionFunctions,
+  IActionPayload,
   IActionProperty,
   IActionType,
+  IFormData,
   IInput,
   IValidationResponse,
 } from "../actions";
@@ -29,8 +31,16 @@ export default class EditCon implements IActionFunctions {
 
   public buttonText = "Edit Connection";
 
+  public formToAction(data: IFormData) {
+    return {
+      startId: data.startId,
+      endId: data.endId,
+      dw: data.dw,
+    };
+  }
+
   public applyAction(state: IGraphState, action: IAction): IGraphState {
-    const payload = action.payload as IEditConnectionAction;
+    const payload = this.getPayload(action);
     const id = `${payload.startId}:${payload.endId}`;
     return {
       ...state,
@@ -45,7 +55,7 @@ export default class EditCon implements IActionFunctions {
   }
 
   public undoAction(_prevState: IGraphState, action: IAction): IAction {
-    const payload = action.payload as IEditConnectionAction;
+    const payload = this.getPayload(action);
     return {
       ...action,
       type: IActionType.EDIT_CON,
@@ -56,9 +66,24 @@ export default class EditCon implements IActionFunctions {
     };
   }
 
-  public validate(state: IGraphState, action: IAction): IValidationResponse {
-    return {
-      isValid: true,
-    };
+  public validate(
+    state: IGraphState,
+    data: IActionPayload,
+  ): IValidationResponse {
+    const { startId, endId } = data as IEditConnectionAction;
+    if (state.connections[`${startId}:${endId}`]) {
+      return {
+        isValid: true,
+      };
+    } else {
+      return {
+        isValid: false,
+        message: "Connection does not exist",
+      };
+    }
+  }
+
+  private getPayload(action: IAction) {
+    return action.payload as IEditConnectionAction;
   }
 }

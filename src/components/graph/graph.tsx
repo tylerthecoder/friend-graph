@@ -1,7 +1,8 @@
 import React from "react";
 import { IConnection, IGraphState } from "../../types";
 import GraphEdge from "./graph-edge/graph-edge";
-import FriendNode from "./graph-node/graph-node";
+import GraphNode from "./graph-node/graph-node";
+import "./graph.css";
 
 interface Props {
   graphState: IGraphState;
@@ -23,9 +24,9 @@ export default function Graph(props: Props) {
   }
 
   return (
-    <svg id="friendGraph">
+    <svg id="graph">
       {Object.values(graphState.nodes).map((friend) => (
-        <FriendNode {...friend} key={friend.id} />
+        <GraphNode {...friend} key={friend.id} />
       ))}
       {Object.values(graphState.connections).map((connection) => (
         <GraphEdge {...toConnectionProps(connection)} />

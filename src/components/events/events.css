@@ -1,4 +1,5 @@
 #events {
   display: flex;
   padding: 2px;
+  border-bottom: 2px solid black;
 }

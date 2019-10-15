@@ -2,8 +2,10 @@ import { IEventDiff, IGraphState } from "../../../types";
 import {
   IAction,
   IActionFunctions,
+  IActionPayload,
   IActionProperty,
   IActionType,
+  IFormData,
   IInput,
   IValidationResponse,
 } from "../actions";
@@ -30,6 +32,14 @@ export default class EditNode implements IActionFunctions {
   ];
 
   public buttonText = "Edit Node";
+
+  public formToAction(data: IFormData) {
+    return {
+      dx: data.dx,
+      dy: data.dy,
+      id: data.id,
+    };
+  }
 
   public applyAction(state: IGraphState, action: IAction): IGraphState {
     const payload = this.getPayload(action);
@@ -59,7 +69,10 @@ export default class EditNode implements IActionFunctions {
     };
   }
 
-  public validate(_state: IGraphState, _action: IAction): IValidationResponse {
+  public validate(
+    _state: IGraphState,
+    _action: IActionPayload,
+  ): IValidationResponse {
     return {
       isValid: true,
     };

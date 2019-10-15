@@ -2,8 +2,10 @@ import { IConnectionType, IGraphState } from "../../../types";
 import {
   IAction,
   IActionFunctions,
+  IActionPayload,
   IActionProperty,
   IActionType,
+  IFormData,
   IInput,
   IValidationResponse,
 } from "../actions";
@@ -32,6 +34,15 @@ export default class AddCon implements IActionFunctions {
 
   public buttonText = "Add Connection";
 
+  public formToAction(data: IFormData) {
+    return {
+      startId: data.startId,
+      endId: data.endId,
+      weight: data.weight,
+      type: data.type,
+    };
+  }
+
   public applyAction(state: IGraphState, action: IAction): IGraphState {
     const payload = this.getPayload(action);
     return {
@@ -55,8 +66,11 @@ export default class AddCon implements IActionFunctions {
     };
   }
 
-  public validate(_state: IGraphState, action: IAction): IValidationResponse {
-    const payload = this.getPayload(action);
+  public validate(
+    _state: IGraphState,
+    data: IActionPayload,
+  ): IValidationResponse {
+    const payload = this.payloadCast(data);
     if (payload.startId === payload.endId) {
       return {
         isValid: false,
@@ -71,5 +85,9 @@ export default class AddCon implements IActionFunctions {
 
   private getPayload(action: IAction) {
     return action.payload as IAddConnectionAction;
+  }
+
+  private payloadCast(payload: any) {
+    return payload as IAddConnectionAction;
   }
 }
