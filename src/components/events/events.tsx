@@ -2,7 +2,11 @@ import React, { useState } from "react";
 import eventData from "../../data/events.json";
 import { IEvent, IEventDiff, IGraphState } from "../../types";
 import "./events.css";
-import { applyEvent, calculateEventDiffs } from "./functions";
+import {
+  applyEvent,
+  calculateEventDiffs,
+  makeEventDiffList,
+} from "./functions";
 
 const events = eventData as IEvent[];
 export const initialEventDiffs = calculateEventDiffs(events);
@@ -23,6 +27,8 @@ interface Props {
   onDateChange: (date: number) => void;
 }
 
+const d = makeEventDiffList(events);
+
 export default function Events(props: Props) {
   const {
     graphState,
@@ -36,21 +42,18 @@ export default function Events(props: Props) {
   const [displayedEventIndex, setDisplayedEventIndex] = useState(
     currentEventIndex,
   );
-
-  const event = eventDiffs[currentEventIndex];
+  const [updateState, setUpdateState] = useState(false);
 
   const diffIndex = currentEventIndex - displayedEventIndex;
 
+  let newGraphState = graphState;
+
   // if we are not currently displaying the correct event
   // then re-calculate the state
-  if (diffIndex !== 0) {
+  if (diffIndex !== 0 && updateState) {
     // if the current event is a ghost
     // then remove it. We didn't do anything to it
-    if (event.next && event.next.actions.length === 0) {
-      console.log("SPOOKY GHOST");
-    }
 
-    let newGraphState = graphState;
     if (diffIndex > 0) {
       // go forward with .next
       // make this a .reduce() somehow later
@@ -71,12 +74,32 @@ export default function Events(props: Props) {
         newGraphState = applyEvent(newGraphState, event);
       }
     }
+
+    if (
+      eventDiffs[displayedEventIndex].prev &&
+      eventDiffs[displayedEventIndex - 1].next!.actions.length === 0
+    ) {
+      // delete the ghost
+      const diffs = deleteGhostNode(displayedEventIndex, graphState.time);
+      onEventDiffChange(diffs);
+      if (currentEventIndex > displayedEventIndex) {
+        onIndexChange(currentEventIndex - 1);
+        setDisplayedEventIndex(currentEventIndex - 1);
+      } else {
+        onIndexChange(currentEventIndex);
+        setDisplayedEventIndex(currentEventIndex);
+      }
+    } else {
+      setDisplayedEventIndex(currentEventIndex);
+    }
+
     onGraphStateChange(newGraphState);
-    setDisplayedEventIndex(currentEventIndex);
+    setUpdateState(false);
   }
 
-  function goToIndex(index: number) {
-    if (eventDiffs[index]) {
+  function goToIndex(index: number, override = false) {
+    if (eventDiffs[index] || override) {
+      setUpdateState(true);
       onIndexChange(index);
     }
   }
@@ -84,9 +107,8 @@ export default function Events(props: Props) {
   function insertGhostNode(
     index: number,
     timeAtIndex: number,
-    newTime: number,
+    ghostTime: number,
   ) {
-    console.log("Ghost", index, timeAtIndex, newTime);
     const currentEventDiff = eventDiffs[index];
     const nextEventDiff = eventDiffs[index + 1];
 
@@ -94,32 +116,34 @@ export default function Events(props: Props) {
     const nextNodeTime =
       timeAtIndex + (currentEventDiff.next ? currentEventDiff.next.dTime : 0);
 
+    if (nextEventDiff) {
+      const nextActions = currentEventDiff.next
+        ? currentEventDiff.next.actions.map((action) => ({ ...action }))
+        : [];
+      ghostEventDiff.next = {
+        actions: nextActions,
+        dTime: nextNodeTime - ghostTime,
+      };
+
+      const prevActions = nextEventDiff.prev
+        ? nextEventDiff.prev.actions.map((action) => ({ ...action }))
+        : [];
+      nextEventDiff.prev = {
+        actions: prevActions,
+        dTime: ghostTime - nextNodeTime,
+      };
+    }
+
     // if nextEventDiff is defined then nextEventDiff.prev has to be defined
     // make sure we don't assign and then read again
     if (currentEventDiff) {
       ghostEventDiff.prev = {
-        actions: nextEventDiff
-          ? nextEventDiff.prev!.actions.map((action) => ({ ...action }))
-          : [],
-        dTime: timeAtIndex - newTime,
+        actions: [],
+        dTime: timeAtIndex - ghostTime,
       };
-      const nextActions = currentEventDiff.next
-        ? currentEventDiff.next.actions.map((action) => ({ ...action }))
-        : [];
       currentEventDiff.next = {
-        actions: nextActions,
-        dTime: newTime - timeAtIndex,
-      };
-    }
-
-    if (nextEventDiff) {
-      ghostEventDiff.next = {
         actions: [],
-        dTime: nextNodeTime - newTime,
-      };
-      nextEventDiff.prev = {
-        actions: [],
-        dTime: newTime - nextNodeTime,
+        dTime: ghostTime - timeAtIndex,
       };
     }
 
@@ -133,7 +157,39 @@ export default function Events(props: Props) {
       setDisplayedEventIndex(displayedEventIndex + 1);
     }
 
-    onIndexChange(index + 1);
+    goToIndex(index + 1, true);
+  }
+
+  function deleteGhostNode(index: number, timeAtIndex: number) {
+    const prevEventDiff = eventDiffs[index - 1];
+    const ghostEventDiff = eventDiffs[index];
+    const nextEventDiff = eventDiffs[index + 1];
+    const nextTime =
+      timeAtIndex + (ghostEventDiff.next ? ghostEventDiff.next.dTime : 0);
+    const prevTime =
+      timeAtIndex + (ghostEventDiff.prev ? ghostEventDiff.prev.dTime : 0);
+
+    if (prevEventDiff && ghostEventDiff.next) {
+      prevEventDiff.next = {
+        actions: ghostEventDiff.next.actions.map((a) => ({ ...a })),
+        dTime: nextTime - prevTime,
+      };
+    } else {
+      prevEventDiff.next = null;
+    }
+
+    if (nextEventDiff) {
+      nextEventDiff.prev = {
+        actions: nextEventDiff.prev
+          ? nextEventDiff.prev.actions.map((a) => ({ ...a }))
+          : [],
+        dTime: prevTime - nextTime,
+      };
+    }
+
+    const newEventDiffs = [...eventDiffs];
+    newEventDiffs.splice(index, 1);
+    return newEventDiffs;
   }
 
   function handleNewTime(event: React.ChangeEvent<HTMLInputElement>) {
@@ -141,6 +197,10 @@ export default function Events(props: Props) {
     const dateString = `${month}/${day}/${year}`;
     const inputtedTime = new Date(dateString).getTime();
     const inputDateString = new Date(dateString).toDateString();
+
+    // I don't really like how I did this because I don't every want to itterate through
+    // all of the event diffs. That kind of defeats the purpose of the diff design
+    // make just move up and down the diffs until the closest date is found
 
     // now run through all of the events and find the one closest to this date.
     // if it is not the same date, then create a new event?
@@ -164,7 +224,7 @@ export default function Events(props: Props) {
     if (isNewDate) {
       insertGhostNode(closestIndex + 1, closestTime, inputtedTime);
     } else {
-      onIndexChange(currentDateIndex + 1);
+      goToIndex(currentDateIndex + 1);
     }
   }
 
