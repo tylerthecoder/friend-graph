@@ -1,4 +1,5 @@
-import { IEventDiff, IGraphState } from "../../../types";
+import { IGraphState } from "../../../types";
+import { EventDiff } from "../../events/functions";
 import {
   IAction,
   IActionFunctions,
@@ -9,8 +10,6 @@ import {
   IInput,
   IValidationResponse,
 } from "../actions";
-import { IAddNodeAction } from "./add-node";
-import { IRmNodeAction } from "./rm-node";
 
 export interface IEditNodeAction {
   id: string;
@@ -78,53 +77,46 @@ export default class EditNode implements IActionFunctions {
     };
   }
 
-  public removeActions(
-    eventDiffs: IEventDiff[],
-    action: IAction,
-    index: number,
-  ): void {
-    const payload = this.getPayload(action);
+  public removeActions(eventDiffs: EventDiff, action: IAction): void {
+    // const payload = this.getPayload(action);
     // Bad things that can happen
     // 1. You try to edit the node after deleting it
-
-    function isSameAction(a: IAction): boolean {
-      return (
-        a.type === IActionType.EDIT_NODE &&
-        (a.payload as IEditNodeAction).id === payload.id
-      );
-    }
-
-    if (eventDiffs[index].prev) {
-      // Check for an RM_NODE with id of action.id
-      const isRemoved = eventDiffs[index].prev!.actions.some(
-        (action) =>
-          action.type === IActionType.RM_NODE &&
-          (action.payload as IRmNodeAction).id,
-      );
-      if (isRemoved) {
-        // remove the edit connection from the prev and change the add_con action on the previous event diff
-        eventDiffs[index].prev!.actions = eventDiffs[
-          index
-        ].prev!.actions.filter((a) => !isSameAction(a));
-
-        // update the add connection
-        eventDiffs[index - 1]
-          .next!.actions.filter(
-            (a) =>
-              a.type === IActionType.ADD_NODE &&
-              (a.payload as IAddNodeAction).id === payload.id,
-          )
-          .forEach((addAction) => {
-            (addAction.payload as IAddNodeAction).x += payload.dx;
-            (addAction.payload as IAddNodeAction).y += payload.dy;
-          });
-
-        // remove the edit connection
-        eventDiffs[index - 1].next!.actions = eventDiffs[
-          index - 1
-        ].next!.actions.filter((a) => !isSameAction(a));
-      }
-    }
+    // Not too sure how this is bad. Should have documented better
+    // function isSameAction(a: IAction): boolean {
+    //   return (
+    //     a.type === IActionType.EDIT_NODE &&
+    //     (a.payload as IEditNodeAction).id === payload.id
+    //   );
+    // }
+    // if (eventDiffs[index].prev) {
+    //   // Check for an RM_NODE with id of action.i
+    //   const isRemoved = eventDiffs[index].prev!.actions.some(
+    //     (action) =>
+    //       action.type === IActionType.RM_NODE &&
+    //       (action.payload as IRmNodeAction).id,
+    //   );
+    //   if (isRemoved) {
+    //     // remove the edit connection from the prev and change the add_con action on the previous event diff
+    //     eventDiffs[index].prev!.actions = eventDiffs[
+    //       index
+    //     ].prev!.actions.filter((a) => !isSameAction(a));
+    //     // update the add connection
+    //     eventDiffs[index - 1]
+    //       .next!.actions.filter(
+    //         (a) =>
+    //           a.type === IActionType.ADD_NODE &&
+    //           (a.payload as IAddNodeAction).id === payload.id,
+    //       )
+    //       .forEach((addAction) => {
+    //         (addAction.payload as IAddNodeAction).x += payload.dx;
+    //         (addAction.payload as IAddNodeAction).y += payload.dy;
+    //       });
+    //     // remove the edit connection
+    //     eventDiffs[index - 1].next!.actions = eventDiffs[
+    //       index - 1
+    //     ].next!.actions.filter((a) => !isSameAction(a));
+    //   }
+    // }
   }
 
   private getPayload(action: IAction) {

@@ -1,4 +1,5 @@
-import { IEvent, IEventDiff, IGraphState } from "../../../types";
+import { IGraphState } from "../../../types";
+import { EventDiff } from "../../events/functions";
 import {
   IAction,
   IActionFunctions,
@@ -62,31 +63,25 @@ export default class RmNode implements IActionFunctions {
   }
 
   // NOTE: This function is not pure. It will alter the eventDiffs that is passed to it.
-  public removeActions(
-    eventDiffs: IEventDiff[],
-    action: IAction,
-    index: number,
-  ): void {
+  public removeActions(eventDiff: EventDiff, action: IAction): void {
     const payload = this.getPayload(action);
 
-    console.log("Args", eventDiffs, action, index);
+    console.log("Removing Actions");
+    // if possible get the node right before
+    let runner: EventDiff | null = eventDiff.prev
+      ? eventDiff.prev.diff
+      : eventDiff;
 
-    // remove all elements
-    for (let i = index - 1; i < eventDiffs.length; i++) {
-      // don't remove from events that are before the delete
-
-      if (eventDiffs[i].prev && i !== index - 1) {
-        eventDiffs[i].prev = removeActionsWithId(
-          eventDiffs[i].prev as IEvent,
-          payload.id,
-        );
+    while (runner) {
+      if (runner.next) {
+        runner.next.event = removeActionsWithId(runner.next.event, payload.id);
       }
-      if (eventDiffs[i].next) {
-        eventDiffs[i].next = removeActionsWithId(
-          eventDiffs[i].next as IEvent,
-          payload.id,
-        );
+      // if we are checking the diff right before the current, do not modify the prev event.
+      // Since that would be deleting something that can be left
+      if (runner.prev && (eventDiff.prev && runner !== eventDiff.prev.diff)) {
+        runner.prev.event = removeActionsWithId(runner.prev.event, payload.id);
       }
+      runner = runner.next ? runner.next.diff : null;
     }
   }
 

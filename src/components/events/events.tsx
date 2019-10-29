@@ -1,15 +1,17 @@
-import React, { useState } from "react";
+import React from "react";
 import eventData from "../../data/events.json";
 import { IEvent, IEventDiff, IGraphState } from "../../types";
 import "./events.css";
 import {
   applyEvent,
   calculateEventDiffs,
+  EventDiff,
   makeEventDiffList,
 } from "./functions";
 
 const events = eventData as IEvent[];
 export const initialEventDiffs = calculateEventDiffs(events);
+export const initialEventDiffList = makeEventDiffList(events);
 
 function toDateInputValue(d: number) {
   const date = new Date(d);
@@ -19,224 +21,229 @@ function toDateInputValue(d: number) {
 
 interface Props {
   graphState: IGraphState;
-  currentEventIndex: number;
   eventDiffs: IEventDiff[];
+  eventDiff: EventDiff;
   onGraphStateChange: (state: IGraphState) => void;
   onEventDiffChange: (diffs: IEventDiff[]) => void;
-  onIndexChange: (index: number) => void;
+  onEventDiffChange2: (diff: EventDiff) => void;
   onDateChange: (date: number) => void;
 }
-
-const d = makeEventDiffList(events);
 
 export default function Events(props: Props) {
   const {
     graphState,
-    eventDiffs,
-    currentEventIndex,
+    eventDiff,
     onGraphStateChange,
-    onEventDiffChange,
-    onIndexChange,
+    onEventDiffChange2,
   } = props;
 
-  const [displayedEventIndex, setDisplayedEventIndex] = useState(
-    currentEventIndex,
-  );
-  const [updateState, setUpdateState] = useState(false);
-
-  const diffIndex = currentEventIndex - displayedEventIndex;
-
-  let newGraphState = graphState;
-
-  // if we are not currently displaying the correct event
-  // then re-calculate the state
-  if (diffIndex !== 0 && updateState) {
-    // if the current event is a ghost
-    // then remove it. We didn't do anything to it
-
-    if (diffIndex > 0) {
-      // go forward with .next
-      // make this a .reduce() somehow later
-      for (let i = displayedEventIndex; i < currentEventIndex; i++) {
-        const event = eventDiffs[i].next;
-        if (!event) {
-          continue;
-        }
-        newGraphState = applyEvent(newGraphState, event);
-      }
-    } else {
-      // go back with .prev
-      for (let i = displayedEventIndex; i > currentEventIndex; i--) {
-        const event = eventDiffs[i].prev;
-        if (!event) {
-          continue;
-        }
-        newGraphState = applyEvent(newGraphState, event);
-      }
+  // using event diff list
+  function nextEvent() {
+    let [newEventDiff, newGraphState] = handleGhostNode();
+    if (newEventDiff.next) {
+      newGraphState = applyEvent(graphState, newEventDiff.next.event);
+      newEventDiff = newEventDiff.next.diff;
     }
-
-    if (
-      eventDiffs[displayedEventIndex].prev &&
-      eventDiffs[displayedEventIndex - 1].next!.actions.length === 0
-    ) {
-      // delete the ghost
-      const diffs = deleteGhostNode(displayedEventIndex, graphState.time);
-      onEventDiffChange(diffs);
-      if (currentEventIndex > displayedEventIndex) {
-        onIndexChange(currentEventIndex - 1);
-        setDisplayedEventIndex(currentEventIndex - 1);
-      } else {
-        onIndexChange(currentEventIndex);
-        setDisplayedEventIndex(currentEventIndex);
-      }
-    } else {
-      setDisplayedEventIndex(currentEventIndex);
-    }
-
+    onEventDiffChange2(newEventDiff);
     onGraphStateChange(newGraphState);
-    setUpdateState(false);
   }
 
-  function goToIndex(index: number, override = false) {
-    if (eventDiffs[index] || override) {
-      setUpdateState(true);
-      onIndexChange(index);
+  function prevEvent() {
+    let [newEventDiff, newGraphState] = handleGhostNode();
+    if (newEventDiff.prev) {
+      newGraphState = applyEvent(graphState, newEventDiff.prev.event);
+      newEventDiff = newEventDiff.prev.diff;
     }
+    onEventDiffChange2(newEventDiff);
+    onGraphStateChange(newGraphState);
   }
 
-  function insertGhostNode(
-    index: number,
-    timeAtIndex: number,
-    ghostTime: number,
-  ) {
-    const currentEventDiff = eventDiffs[index];
-    const nextEventDiff = eventDiffs[index + 1];
+  function handleGhostNode(): [EventDiff, IGraphState] {
+    if (eventDiff.prev && eventDiff.prev.event.actions.length === 0) {
+      console.log("It was a ghost");
+      // time to delete the ghost node
+      const prevDiff = eventDiff.prev.diff;
+      const nextDiff = eventDiff.next ? eventDiff.next.diff : null;
 
-    const ghostEventDiff: IEventDiff = { next: null, prev: null };
-    const nextNodeTime =
-      timeAtIndex + (currentEventDiff.next ? currentEventDiff.next.dTime : 0);
+      if (!nextDiff) {
+        prevDiff.next = null;
+        return [prevDiff, graphState];
+      }
 
-    if (nextEventDiff) {
-      const nextActions = currentEventDiff.next
-        ? currentEventDiff.next.actions.map((action) => ({ ...action }))
-        : [];
-      ghostEventDiff.next = {
-        actions: nextActions,
-        dTime: nextNodeTime - ghostTime,
+      prevDiff.next = {
+        diff: nextDiff,
+        event: {
+          actions: eventDiff.next!.event.actions,
+          dTime: eventDiff.next!.event.dTime + -eventDiff.prev.event.dTime,
+        },
       };
 
-      const prevActions = nextEventDiff.prev
-        ? nextEventDiff.prev.actions.map((action) => ({ ...action }))
-        : [];
-      nextEventDiff.prev = {
-        actions: prevActions,
-        dTime: ghostTime - nextNodeTime,
+      nextDiff.prev = {
+        diff: prevDiff,
+        event: {
+          actions: nextDiff.prev!.event.actions,
+          dTime: -eventDiff.next!.event.dTime + eventDiff.prev.event.dTime,
+        },
       };
+
+      graphState.time += eventDiff.prev.event.dTime;
+
+      return [prevDiff, graphState];
     }
 
-    // if nextEventDiff is defined then nextEventDiff.prev has to be defined
-    // make sure we don't assign and then read again
-    if (currentEventDiff) {
-      ghostEventDiff.prev = {
-        actions: [],
-        dTime: timeAtIndex - ghostTime,
-      };
-      currentEventDiff.next = {
-        actions: [],
-        dTime: ghostTime - timeAtIndex,
-      };
-    }
-
-    const newEventDiffs = [...eventDiffs];
-    newEventDiffs.splice(index + 1, 0, ghostEventDiff);
-    onEventDiffChange(newEventDiffs);
-
-    // we inserted a node before the current state
-    // so the index goes up by one
-    if (index < currentEventIndex) {
-      setDisplayedEventIndex(displayedEventIndex + 1);
-    }
-
-    goToIndex(index + 1, true);
+    return [eventDiff, graphState];
   }
 
-  function deleteGhostNode(index: number, timeAtIndex: number) {
-    const prevEventDiff = eventDiffs[index - 1];
-    const ghostEventDiff = eventDiffs[index];
-    const nextEventDiff = eventDiffs[index + 1];
-    const nextTime =
-      timeAtIndex + (ghostEventDiff.next ? ghostEventDiff.next.dTime : 0);
-    const prevTime =
-      timeAtIndex + (ghostEventDiff.prev ? ghostEventDiff.prev.dTime : 0);
-
-    if (prevEventDiff && ghostEventDiff.next) {
-      prevEventDiff.next = {
-        actions: ghostEventDiff.next.actions.map((a) => ({ ...a })),
-        dTime: nextTime - prevTime,
-      };
-    } else {
-      prevEventDiff.next = null;
-    }
-
-    if (nextEventDiff) {
-      nextEventDiff.prev = {
-        actions: nextEventDiff.prev
-          ? nextEventDiff.prev.actions.map((a) => ({ ...a }))
-          : [],
-        dTime: prevTime - nextTime,
-      };
-    }
-
-    const newEventDiffs = [...eventDiffs];
-    newEventDiffs.splice(index, 1);
-    return newEventDiffs;
-  }
-
-  function handleNewTime(event: React.ChangeEvent<HTMLInputElement>) {
+  function handleTimeChange(event: React.ChangeEvent<HTMLInputElement>) {
     const [year, month, day] = event.target.value.split("-");
     const dateString = `${month}/${day}/${year}`;
     const inputtedTime = new Date(dateString).getTime();
     const inputDateString = new Date(dateString).toDateString();
 
-    // I don't really like how I did this because I don't every want to itterate through
-    // all of the event diffs. That kind of defeats the purpose of the diff design
-    // make just move up and down the diffs until the closest date is found
+    let [newEventDiff, newGraphState] = handleGhostNode();
 
-    // now run through all of the events and find the one closest to this date.
-    // if it is not the same date, then create a new event?
-    // could binary search since the list is sorted? Maybe later. Might be hard since we only store dTime
-    let currentDate = 0;
-    let currentDateIndex = 0;
-    let closestIndex = -1;
-    let closestTime = 0;
-    const isNewDate = eventDiffs.every((eventDiff, index) => {
-      if (eventDiff.next) {
-        currentDate += eventDiff.next.dTime;
-        currentDateIndex = index;
-        if (currentDate < inputtedTime) {
-          closestIndex = index;
-          closestTime = currentDate;
-        }
-      }
-      return new Date(currentDate).toDateString() !== inputDateString;
-    });
-
-    if (isNewDate) {
-      insertGhostNode(closestIndex + 1, closestTime, inputtedTime);
-    } else {
-      goToIndex(currentDateIndex + 1);
+    if (new Date(newGraphState.time).toDateString() === inputDateString) {
+      onGraphStateChange(newGraphState);
+      onEventDiffChange2(newEventDiff);
+      return;
     }
+
+    const movingForward = inputtedTime > graphState.time;
+
+    let lowDiff: EventDiff | null = movingForward
+      ? newEventDiff.prev
+        ? newEventDiff.prev.diff
+        : null
+      : newEventDiff;
+    let highDiff: EventDiff | null = movingForward
+      ? newEventDiff
+      : newEventDiff.next
+      ? newEventDiff.next.diff
+      : null;
+
+    const moveFunc = movingForward
+      ? () => {
+          if (highDiff && highDiff.next) {
+            newGraphState = applyEvent(newGraphState, highDiff.next.event);
+          } else {
+            return false;
+          }
+          lowDiff = highDiff;
+          highDiff = highDiff && highDiff.next ? highDiff.next.diff : null;
+          return newGraphState.time < inputtedTime;
+        }
+      : () => {
+          if (lowDiff && lowDiff.prev) {
+            newGraphState = applyEvent(newGraphState, lowDiff.prev.event);
+          } else {
+            return false;
+          }
+          highDiff = lowDiff;
+          lowDiff = lowDiff && lowDiff.prev ? lowDiff.prev.diff : null;
+          return newGraphState.time > inputtedTime;
+        };
+
+    while (moveFunc()) {}
+
+    if (new Date(newGraphState.time).toDateString() === inputDateString) {
+      onGraphStateChange(newGraphState);
+
+      const newDiff = movingForward ? highDiff : lowDiff;
+      if (!newDiff) {
+        console.log("You should never see this");
+      }
+      onEventDiffChange2(newDiff!);
+      return;
+    }
+
+    // if we went forward then we need to move the diffs back one
+    if (movingForward && highDiff && highDiff.prev && highDiff.next) {
+      newGraphState = applyEvent(newGraphState, highDiff.prev.event);
+    } else if (movingForward) {
+      console.log("Don't know what to do here");
+      // this means we were on an outer edge
+    }
+
+    // Past here is ghost stuff
+    const lowTime = newGraphState.time;
+    const highTime =
+      newGraphState.time +
+      (lowDiff && lowDiff.next ? lowDiff.next.event.dTime : 0);
+
+    // these should never be null I guess
+    if (!lowDiff || !highDiff) {
+      return;
+    }
+
+    // need to see if we are past the first or last node
+
+    if (inputtedTime > highTime) {
+      highDiff = highDiff.next ? highDiff.next.diff : null;
+      lowDiff = lowDiff.next ? lowDiff.next.diff : null;
+    } else if (inputtedTime < lowTime) {
+      highDiff = highDiff.prev ? highDiff.prev.diff : null;
+      lowDiff = lowDiff.prev ? lowDiff.prev.diff : null;
+    }
+
+    const ghostDiff: EventDiff = {
+      next: null,
+      prev: null,
+    };
+
+    if (highDiff) {
+      ghostDiff.next = {
+        event: {
+          actions: lowDiff && lowDiff.next ? lowDiff.next.event.actions : [],
+          dTime: highTime - inputtedTime,
+        },
+        diff: highDiff,
+      };
+      highDiff.prev = {
+        event: {
+          actions: highDiff.prev ? highDiff.prev.event.actions : [],
+          dTime: inputtedTime - highTime,
+        },
+        diff: ghostDiff,
+      };
+    }
+
+    if (lowDiff) {
+      ghostDiff.prev = {
+        event: {
+          actions: [],
+          dTime: lowTime - inputtedTime,
+        },
+        diff: lowDiff,
+      };
+      lowDiff.next = {
+        event: {
+          actions: [],
+          dTime: inputtedTime - lowTime,
+        },
+        diff: ghostDiff,
+      };
+    }
+
+    // apply the diff we just made
+    if (lowDiff && lowDiff.next) {
+      newGraphState = applyEvent(newGraphState, lowDiff.next.event);
+    } else if (highDiff && highDiff.prev) {
+      newGraphState = applyEvent(newGraphState, highDiff.prev.event);
+    }
+
+    onGraphStateChange(newGraphState);
+    onEventDiffChange2(ghostDiff);
   }
 
   return (
     <div id="events">
-      <button onClick={() => goToIndex(currentEventIndex - 1)}>Previous</button>
-      <button onClick={() => goToIndex(currentEventIndex + 1)}> Next </button>
+      <button onClick={prevEvent}>Previous</button>
+      <button onClick={nextEvent}> Next </button>
       {new Date(graphState.time).toDateString()}({graphState.time})
       <input
         type="date"
         value={toDateInputValue(graphState.time)}
-        onChange={handleNewTime}
+        onChange={handleTimeChange}
       />
     </div>
   );
