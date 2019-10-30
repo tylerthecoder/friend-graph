@@ -1,5 +1,5 @@
-import { IEvent, IEventDiff, IGraphState } from "../../types";
-import { applyEvent } from "../events/functions";
+import { IEvent, IGraphState } from "../../types";
+import { applyEvent, EventDiff } from "../events/functions";
 import AddCon, { IAddConnectionAction } from "./action-types/add-con";
 import AddNode, { IAddNodeAction } from "./action-types/add-node";
 import EditCon, { IEditConnectionAction } from "./action-types/edit-con";
@@ -65,11 +65,7 @@ export interface IActionFunctions {
     state: IGraphState,
     payload: IActionPayload,
   ) => IValidationResponse;
-  removeActions?: (
-    eventDiffs: IEventDiff[],
-    action: IAction,
-    index: number,
-  ) => void;
+  removeActions?: (eventDiffs: EventDiff, action: IAction) => void;
 }
 
 const actionTypesToActions: Map<IActionType, IActionFunctions> = new Map();
@@ -91,7 +87,7 @@ function getActionFunctions(actionType: IActionType) {
 }
 
 export function applyAction(state: IGraphState, action: IAction): IGraphState {
-  console.log("Applying", action);
+  // console.log("Applying", action);
   return getActionFunctions(action.type).applyAction(state, action);
 }
 
@@ -110,45 +106,47 @@ export function validateAction(
 }
 
 export function cleanupEventDiffs(
-  eventDiffs: IEventDiff[],
-  index: number,
+  eventDiffs: EventDiff,
   state: IGraphState,
   action: IAction,
-): IEventDiff[] {
-  // copy the entire event diffs
-  const newDiffs = [...eventDiffs].map((diff) => ({ ...diff }));
-
-  const currentEvent = newDiffs[index];
-  const prevEvent = newDiffs[index - 1];
+): EventDiff {
+  const prevEvent = eventDiffs.prev ? eventDiffs.prev.diff : null;
+  const currentEvent = eventDiffs;
 
   if (prevEvent && prevEvent.next) {
     prevEvent.next = {
       ...prevEvent.next,
-      actions: [...prevEvent.next.actions, action],
+      event: {
+        ...prevEvent.next.event,
+        actions: [...prevEvent.next.event.actions, action],
+      },
     };
   }
 
   if (currentEvent && currentEvent.prev) {
-    const prevState = applyEvent(state, currentEvent.prev);
+    const prevState = applyEvent(state, currentEvent.prev.event);
     const undidAction = undoAction(prevState, action);
 
     currentEvent.prev = {
       ...currentEvent.prev,
-      actions: [...currentEvent.prev.actions, undidAction],
+      event: {
+        ...currentEvent.prev.event,
+        actions: [...currentEvent.prev.event.actions, undidAction],
+      },
     };
   }
 
   const actionFunctions = getActionFunctions(action.type);
 
   if (!actionFunctions.removeActions) {
-    return newDiffs;
+    return eventDiffs;
   }
 
   // the remove action function is not pure, it will change the newDiffs
   // but this is fine since we already copied it above
-  actionFunctions.removeActions(newDiffs, action, index);
+  actionFunctions.removeActions(eventDiffs, action);
 
-  return newDiffs;
+  return eventDiffs;
 }
 
 export function getActionInputs(actionType: IActionType): IInput[] {

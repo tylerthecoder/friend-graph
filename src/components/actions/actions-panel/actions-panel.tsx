@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { IEventDiff, IGraphState } from "../../../types";
+import { IGraphState } from "../../../types";
+import { EventDiff } from "../../events/functions";
 import ActionForm from "../action-form/action-form";
 import ActionViewer from "../action-viewer/action-viewer";
 import {
@@ -12,26 +13,20 @@ import "./actions-panel.css";
 
 interface Props {
   graphState: IGraphState;
-  eventDiffs: IEventDiff[];
-  currentEventIndex: number;
+  eventDiff: EventDiff;
   onNewGraphState: (state: IGraphState) => void;
-  onNewEventDiffList: (state: IEventDiff[]) => void;
+  onEventDiffChange: (diff: EventDiff) => void;
 }
 
 export default function ActionPanel(props: Props) {
   const {
-    eventDiffs,
-    currentEventIndex,
+    eventDiff,
     onNewGraphState,
-    onNewEventDiffList,
+    onEventDiffChange: setEventDiff,
     graphState,
   } = props;
-  const prevEvent =
-    currentEventIndex === 0 ? null : eventDiffs[currentEventIndex - 1].next;
-  const nextEvent =
-    currentEventIndex === eventDiffs.length - 1
-      ? null
-      : eventDiffs[currentEventIndex].next;
+  const prevEvent = eventDiff && eventDiff.prev ? eventDiff.prev.event : null;
+  const nextEvent = eventDiff && eventDiff.next ? eventDiff.next.event : null;
 
   const [openedFormIndex, setOpenedFormIndex] = useState(-1);
 
@@ -52,17 +47,12 @@ export default function ActionPanel(props: Props) {
     // clean up the eventList if need be
     // for example, if I just deleted a node, make sure that all
     // later connections for that node are also deleted
-    const newEventDiffs = cleanupEventDiffs(
-      eventDiffs,
-      currentEventIndex,
-      newGraphState,
-      action,
-    );
+    const newEventDiffs = cleanupEventDiffs(eventDiff, newGraphState, action);
 
     console.log("New Event Diffs", newEventDiffs);
 
     onNewGraphState(newGraphState);
-    onNewEventDiffList(newEventDiffs);
+    setEventDiff(newEventDiffs);
   }
 
   return (

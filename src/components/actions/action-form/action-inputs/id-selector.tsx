@@ -10,10 +10,10 @@ export default function IdSelector(props: Props) {
   const { onValueChange, ids, label } = props;
   const [val, setVal] = useState("");
 
-  if (ids.indexOf(val) === -1 && val !== "") {
-    if (ids.length === 0) {
+  if (ids.indexOf(val) === -1) {
+    if (ids.length === 0 && val !== "") {
       handleValueChange("");
-    } else {
+    } else if (ids.length > 0) {
       handleValueChange(ids[0]);
     }
   }

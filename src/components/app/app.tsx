@@ -1,33 +1,23 @@
 import React, { useState } from "react";
-import { IEventDiff, IGraphState } from "../../types";
+import { IGraphState } from "../../types";
 import ActionPanel from "../actions/actions-panel/actions-panel";
-import Events, { initialEventDiffs } from "../events/events";
-import { emptyGraphState } from "../events/functions";
+import Events, { initialEventDiffList } from "../events/events";
+import { emptyGraphState, EventDiff } from "../events/functions";
 import Graph from "../graph/graph";
 import "./app.css";
 
 function App() {
   const [graphState, setGraphState] = useState(emptyGraphState);
-  const [eventDiffs, setEventDiffs] = useState(initialEventDiffs);
-  const [currentEventIndex, setCurrentEventIndex] = useState(0);
+  const [eventDiff, setEventDiff] = useState(initialEventDiffList);
 
   function updateGraphState(state: IGraphState) {
     console.log("Graph State", state);
     setGraphState(state);
   }
 
-  function updateEventDiffs(diffs: IEventDiff[]) {
-    console.log("Event Diffs", diffs);
-    setEventDiffs(diffs);
-  }
-
-  function updateCurrentEventIndex(index: number) {
-    console.log("Event Index", index);
-    setCurrentEventIndex(index);
-  }
-
-  function updateDate() {
-    console.log("Change Date");
+  function updateEventDiff(diff: EventDiff) {
+    console.log("Event Diff", diff);
+    setEventDiff(diff);
   }
 
   return (
@@ -35,21 +25,17 @@ function App() {
       <div className="left-panel">
         <Events
           graphState={graphState}
-          currentEventIndex={currentEventIndex}
-          eventDiffs={eventDiffs}
-          onIndexChange={updateCurrentEventIndex}
+          eventDiff={eventDiff}
           onGraphStateChange={updateGraphState}
-          onEventDiffChange={updateEventDiffs}
-          onDateChange={updateDate}
+          onEventDiffChange={updateEventDiff}
         />
         <Graph graphState={graphState} />
       </div>
       <ActionPanel
-        eventDiffs={eventDiffs}
-        currentEventIndex={currentEventIndex}
+        eventDiff={eventDiff}
         graphState={graphState}
         onNewGraphState={updateGraphState}
-        onNewEventDiffList={updateEventDiffs}
+        onEventDiffChange={updateEventDiff}
       />
     </div>
   );
