@@ -87,7 +87,7 @@ function getActionFunctions(actionType: IActionType) {
 }
 
 export function applyAction(state: IGraphState, action: IAction): IGraphState {
-  console.log("Applying", action);
+  // console.log("Applying", action);
   return getActionFunctions(action.type).applyAction(state, action);
 }
 

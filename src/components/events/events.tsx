@@ -3,10 +3,14 @@ import eventData from "../../data/events.json";
 import { IEvent, IEventDiff, IGraphState } from "../../types";
 import "./events.css";
 import {
-  applyEvent,
+  addGhostNode,
+  bustGhost,
   calculateEventDiffs,
   EventDiff,
   makeEventDiffList,
+  moveToNextEvent,
+  moveToPrevEvent,
+  moveToTime,
 } from "./functions";
 
 const events = eventData as IEvent[];
@@ -39,23 +43,19 @@ export default function Events(props: Props) {
 
   // using event diff list
   function nextEvent() {
-    let [newEventDiff, newGraphState] = handleGhostNode();
-    if (newEventDiff.next) {
-      newGraphState = applyEvent(graphState, newEventDiff.next.event);
-      newEventDiff = newEventDiff.next.diff;
-    }
-    onEventDiffChange2(newEventDiff);
-    onGraphStateChange(newGraphState);
+    let [foundGhost, GS, ED] = bustGhost(graphState, eventDiff);
+    [GS, ED] = moveToNextEvent(GS, ED);
+    onGraphStateChange(GS);
+    onEventDiffChange2(ED);
   }
 
   function prevEvent() {
-    let [newEventDiff, newGraphState] = handleGhostNode();
-    if (newEventDiff.prev) {
-      newGraphState = applyEvent(graphState, newEventDiff.prev.event);
-      newEventDiff = newEventDiff.prev.diff;
+    let [foundGhost, GS, ED] = bustGhost(graphState, eventDiff);
+    if (!foundGhost) {
+      [GS, ED] = moveToPrevEvent(graphState, eventDiff);
     }
-    onEventDiffChange2(newEventDiff);
-    onGraphStateChange(newGraphState);
+    onEventDiffChange2(ED);
+    onGraphStateChange(GS);
   }
 
   function handleGhostNode(): [EventDiff, IGraphState] {
@@ -98,141 +98,147 @@ export default function Events(props: Props) {
     const [year, month, day] = event.target.value.split("-");
     const dateString = `${month}/${day}/${year}`;
     const inputtedTime = new Date(dateString).getTime();
-    const inputDateString = new Date(dateString).toDateString();
 
-    let [newEventDiff, newGraphState] = handleGhostNode();
+    const [tED, tGS] = handleGhostNode();
+    let [found, GS, ED] = moveToTime(tGS, tED, inputtedTime);
 
-    if (new Date(newGraphState.time).toDateString() === inputDateString) {
-      onGraphStateChange(newGraphState);
-      onEventDiffChange2(newEventDiff);
-      return;
+    console.log(found);
+
+    // The user didn't click on a date that is defined
+    if (!found) {
+      [GS, ED] = addGhostNode(GS, ED, inputtedTime);
+      console.log(GS, ED);
     }
 
-    const movingForward = inputtedTime > graphState.time;
+    onGraphStateChange(GS);
+    onEventDiffChange2(ED);
+    return;
 
-    let lowDiff: EventDiff | null = movingForward
-      ? newEventDiff.prev
-        ? newEventDiff.prev.diff
-        : null
-      : newEventDiff;
-    let highDiff: EventDiff | null = movingForward
-      ? newEventDiff
-      : newEventDiff.next
-      ? newEventDiff.next.diff
-      : null;
+    // const movingForward = inputtedTime > graphState.time;
 
-    const moveFunc = movingForward
-      ? () => {
-          if (highDiff && highDiff.next) {
-            newGraphState = applyEvent(newGraphState, highDiff.next.event);
-          } else {
-            return false;
-          }
-          lowDiff = highDiff;
-          highDiff = highDiff && highDiff.next ? highDiff.next.diff : null;
-          return newGraphState.time < inputtedTime;
-        }
-      : () => {
-          if (lowDiff && lowDiff.prev) {
-            newGraphState = applyEvent(newGraphState, lowDiff.prev.event);
-          } else {
-            return false;
-          }
-          highDiff = lowDiff;
-          lowDiff = lowDiff && lowDiff.prev ? lowDiff.prev.diff : null;
-          return newGraphState.time > inputtedTime;
-        };
+    // let lowDiff: EventDiff | null = movingForward
+    //   ? newEventDiff.prev
+    //     ? newEventDiff.prev.diff
+    //     : null
+    //   : newEventDiff;
+    // let highDiff: EventDiff | null = movingForward
+    //   ? newEventDiff
+    //   : newEventDiff.next
+    //   ? newEventDiff.next.diff
+    //   : null;
 
-    while (moveFunc()) {}
+    // const moveFunc = movingForward
+    //   ? () => {
+    //       if (highDiff && highDiff.next) {
+    //         newGraphState = applyEvent(newGraphState, highDiff.next.event);
+    //       } else {
+    //         return false;
+    //       }
+    //       lowDiff = highDiff;
+    //       highDiff = highDiff && highDiff.next ? highDiff.next.diff : null;
+    //       return newGraphState.time < inputtedTime;
+    //     }
+    //   : () => {
+    //       if (lowDiff && lowDiff.prev) {
+    //         newGraphState = applyEvent(newGraphState, lowDiff.prev.event);
+    //       } else {
+    //         return false;
+    //       }
+    //       highDiff = lowDiff;
+    //       lowDiff = lowDiff && lowDiff.prev ? lowDiff.prev.diff : null;
+    //       return newGraphState.time > inputtedTime;
+    //     };
 
-    if (new Date(newGraphState.time).toDateString() === inputDateString) {
-      onGraphStateChange(newGraphState);
+    // while (moveFunc()) {}
 
-      const newDiff = movingForward ? highDiff : lowDiff;
-      if (!newDiff) {
-        console.log("You should never see this");
-      }
-      onEventDiffChange2(newDiff!);
-      return;
-    }
+    // if (new Date(newGraphState.time).toDateString() === inputDateString) {
+    //   onGraphStateChange(newGraphState);
 
-    // if we went forward then we need to move the diffs back one
-    if (movingForward && highDiff && highDiff.prev && highDiff.next) {
-      newGraphState = applyEvent(newGraphState, highDiff.prev.event);
-    } else if (movingForward) {
-      console.log("Don't know what to do here");
-      // this means we were on an outer edge
-    }
+    //   const newDiff = movingForward ? highDiff : lowDiff;
+    //   if (!newDiff) {
+    //     console.log("You should never see this");
+    //   }
+    //   onEventDiffChange2(newDiff!);
+    //   return;
+    // }
 
-    // Past here is ghost stuff
-    const lowTime = newGraphState.time;
-    const highTime =
-      newGraphState.time +
-      (lowDiff && lowDiff.next ? lowDiff.next.event.dTime : 0);
+    // // if we went forward then we need to move the diffs back one
+    // if (movingForward && highDiff && highDiff.prev && highDiff.next) {
+    //   newGraphState = applyEvent(newGraphState, highDiff.prev.event);
+    // } else if (movingForward) {
+    //   console.log("Don't know what to do here");
+    //   // this means we were on an outer edge
+    // }
 
-    // these should never be null I guess
-    if (!lowDiff || !highDiff) {
-      return;
-    }
+    // // Past here is ghost stuff
+    // const lowTime = newGraphState.time;
+    // const highTime =
+    //   newGraphState.time +
+    //   (lowDiff && lowDiff.next ? lowDiff.next.event.dTime : 0);
 
-    // need to see if we are past the first or last node
+    // // these should never be null I guess
+    // if (!lowDiff || !highDiff) {
+    //   return;
+    // }
 
-    if (inputtedTime > highTime) {
-      highDiff = highDiff.next ? highDiff.next.diff : null;
-      lowDiff = lowDiff.next ? lowDiff.next.diff : null;
-    } else if (inputtedTime < lowTime) {
-      highDiff = highDiff.prev ? highDiff.prev.diff : null;
-      lowDiff = lowDiff.prev ? lowDiff.prev.diff : null;
-    }
+    // // need to see if we are past the first or last node
 
-    const ghostDiff: EventDiff = {
-      next: null,
-      prev: null,
-    };
+    // if (inputtedTime > highTime) {
+    //   highDiff = highDiff.next ? highDiff.next.diff : null;
+    //   lowDiff = lowDiff.next ? lowDiff.next.diff : null;
+    // } else if (inputtedTime < lowTime) {
+    //   highDiff = highDiff.prev ? highDiff.prev.diff : null;
+    //   lowDiff = lowDiff.prev ? lowDiff.prev.diff : null;
+    // }
 
-    if (highDiff) {
-      ghostDiff.next = {
-        event: {
-          actions: lowDiff && lowDiff.next ? lowDiff.next.event.actions : [],
-          dTime: highTime - inputtedTime,
-        },
-        diff: highDiff,
-      };
-      highDiff.prev = {
-        event: {
-          actions: highDiff.prev ? highDiff.prev.event.actions : [],
-          dTime: inputtedTime - highTime,
-        },
-        diff: ghostDiff,
-      };
-    }
+    // const ghostDiff: EventDiff = {
+    //   next: null,
+    //   prev: null,
+    // };
 
-    if (lowDiff) {
-      ghostDiff.prev = {
-        event: {
-          actions: [],
-          dTime: lowTime - inputtedTime,
-        },
-        diff: lowDiff,
-      };
-      lowDiff.next = {
-        event: {
-          actions: [],
-          dTime: inputtedTime - lowTime,
-        },
-        diff: ghostDiff,
-      };
-    }
+    // if (highDiff) {
+    //   ghostDiff.next = {
+    //     event: {
+    //       actions: lowDiff && lowDiff.next ? lowDiff.next.event.actions : [],
+    //       dTime: highTime - inputtedTime,
+    //     },
+    //     diff: highDiff,
+    //   };
+    //   highDiff.prev = {
+    //     event: {
+    //       actions: highDiff.prev ? highDiff.prev.event.actions : [],
+    //       dTime: inputtedTime - highTime,
+    //     },
+    //     diff: ghostDiff,
+    //   };
+    // }
 
-    // apply the diff we just made
-    if (lowDiff && lowDiff.next) {
-      newGraphState = applyEvent(newGraphState, lowDiff.next.event);
-    } else if (highDiff && highDiff.prev) {
-      newGraphState = applyEvent(newGraphState, highDiff.prev.event);
-    }
+    // if (lowDiff) {
+    //   ghostDiff.prev = {
+    //     event: {
+    //       actions: [],
+    //       dTime: lowTime - inputtedTime,
+    //     },
+    //     diff: lowDiff,
+    //   };
+    //   lowDiff.next = {
+    //     event: {
+    //       actions: [],
+    //       dTime: inputtedTime - lowTime,
+    //     },
+    //     diff: ghostDiff,
+    //   };
+    // }
 
-    onGraphStateChange(newGraphState);
-    onEventDiffChange2(ghostDiff);
+    // // apply the diff we just made
+    // if (lowDiff && lowDiff.next) {
+    //   newGraphState = applyEvent(newGraphState, lowDiff.next.event);
+    // } else if (highDiff && highDiff.prev) {
+    //   newGraphState = applyEvent(newGraphState, highDiff.prev.event);
+    // }
+
+    // onGraphStateChange(newGraphState);
+    // onEventDiffChange2(ghostDiff);
   }
 
   return (
