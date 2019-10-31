@@ -2,14 +2,10 @@ import React, { useState } from "react";
 import { IGraphState } from "./../../types";
 import { EventDiff } from "./../events/functions";
 import ActionForm from "./action-form/action-form";
+import { IActionType } from "./action-types/action-types";
 import ActionViewer from "./action-viewer/action-viewer";
 import "./actions.css";
-import {
-  applyAction,
-  cleanupEventDiffs,
-  formToAction,
-  IActionType,
-} from "./functions";
+import { applyActionAndUpdate, formToAction } from "./functions";
 
 interface Props {
   graphState: IGraphState;
@@ -43,16 +39,10 @@ export default function ActionPanel(props: Props) {
       payload,
     };
 
-    const newGraphState = applyAction(graphState, action);
-    // clean up the eventList if need be
-    // for example, if I just deleted a node, make sure that all
-    // later connections for that node are also deleted
-    const newEventDiffs = cleanupEventDiffs(eventDiff, newGraphState, action);
+    const [GS, ED] = applyActionAndUpdate(action, graphState, eventDiff);
 
-    console.log("New Event Diffs", newEventDiffs);
-
-    onNewGraphState(newGraphState);
-    setEventDiff(newEventDiffs);
+    onNewGraphState(GS);
+    setEventDiff(ED);
   }
 
   return (

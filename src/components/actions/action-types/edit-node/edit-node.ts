@@ -1,15 +1,17 @@
-import { IGraphState } from "../../../types";
-import { EventDiff } from "../../events/functions";
+import { IGraphState } from "../../../../types";
+import { EventDiff } from "../../../events/functions";
 import {
   IAction,
+  IFormData,
+  IInput,
+  IValidationResponse,
+} from "../../functions";
+import {
   IActionFunctions,
   IActionPayload,
   IActionProperty,
   IActionType,
-  IFormData,
-  IInput,
-  IValidationResponse,
-} from "../functions";
+} from "../action-types";
 
 export interface IEditNodeAction {
   id: string;
@@ -69,8 +71,9 @@ export default class EditNode implements IActionFunctions {
   }
 
   public validate(
+    _data: IActionPayload,
     _state: IGraphState,
-    _action: IActionPayload,
+    _diff: EventDiff,
   ): IValidationResponse {
     return {
       isValid: true,

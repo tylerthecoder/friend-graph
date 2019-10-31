@@ -1,13 +1,12 @@
-import { IGraphState } from "../../../types";
+import { IGraphState } from "../../../../types";
+import { EventDiff } from "../../../events/functions";
+import { IAction, IInput, IValidationResponse } from "../../functions";
 import {
-  IAction,
   IActionFunctions,
   IActionPayload,
   IActionProperty,
   IActionType,
-  IInput,
-  IValidationResponse,
-} from "../functions";
+} from "../action-types";
 
 export interface IAddNodeAction {
   id: string;
@@ -64,23 +63,48 @@ export default class AddNode implements IActionFunctions {
   }
 
   public validate(
-    state: IGraphState,
     data: IActionPayload,
+    state: IGraphState,
+    diff: EventDiff,
   ): IValidationResponse {
     const payload = data as IAddNodeAction;
-    const condition = Object.values(state.nodes).every(
-      (node) => node.id !== payload.id,
+    const idInGS = Object.values(state.nodes).some(
+      (node) => node.id === payload.id,
     );
-    if (condition) {
-      return {
-        isValid: true,
-      };
-    } else {
+
+    if (idInGS) {
       return {
         isValid: false,
         message: "Id already exists",
       };
     }
+
+    let runner: EventDiff | null = diff;
+    let flag = false;
+    while (runner && !flag) {
+      if (
+        runner.next &&
+        runner.next.event.actions.some(
+          (a) =>
+            a.type === IActionType.ADD_NODE &&
+            (a.payload as IAddNodeAction).id === payload.id,
+        )
+      ) {
+        flag = true;
+      }
+      runner = runner.next ? runner.next.diff : null;
+    }
+
+    if (flag) {
+      return {
+        isValid: false,
+        message: "Id already exists (Added later in the timeline)",
+      };
+    }
+
+    return {
+      isValid: true,
+    };
   }
 
   private getPayload(action: IAction) {

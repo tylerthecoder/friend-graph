@@ -1,5 +1,6 @@
 import { IGraphState } from "../../types.js";
-import { applyAction, IAction, IActionType } from "./functions";
+import { IActionType } from "./action-types/action-types";
+import { applyAction, IAction } from "./functions";
 
 describe("Actions", () => {
   it("Applies Action", () => {

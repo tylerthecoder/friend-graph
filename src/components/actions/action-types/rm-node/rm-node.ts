@@ -1,16 +1,18 @@
-import { IGraphState } from "../../../types";
-import { EventDiff } from "../../events/functions";
+import { IEvent, IGraphState } from "../../../../types";
+import { EventDiff } from "../../../events/functions";
 import {
   IAction,
+  IFormData,
+  IInput,
+  IValidationResponse,
+} from "../../functions";
+import {
   IActionFunctions,
   IActionPayload,
   IActionProperty,
   IActionType,
-  IFormData,
-  IInput,
-  IValidationResponse,
-  removeActionsWithId,
-} from "../functions";
+} from "../action-types";
+import { IAddConnectionAction } from "../add-con/add-con";
 
 export interface IRmNodeAction {
   id: string;
@@ -53,8 +55,9 @@ export default class RmNode implements IActionFunctions {
   }
 
   public validate(
+    _data: IActionPayload,
     _state: IGraphState,
-    _action: IActionPayload,
+    _diff: EventDiff,
   ): IValidationResponse {
     return {
       isValid: true,
@@ -65,20 +68,44 @@ export default class RmNode implements IActionFunctions {
   public removeActions(eventDiff: EventDiff, action: IAction): void {
     const payload = this.getPayload(action);
 
-    console.log("Removing Actions");
     // if possible get the node right before
     let runner: EventDiff | null = eventDiff.prev
       ? eventDiff.prev.diff
       : eventDiff;
 
+    // we only want to remove connections, not everything with an id
+
+    const removeConnectionsWithID = (event: IEvent, id: string) => {
+      const invalidEventTypes = ["RM_CON", "ADD_CON"];
+      return {
+        ...event,
+        actions: event.actions
+          .filter(
+            (eve) =>
+              !(
+                invalidEventTypes.includes(eve.type) &&
+                ((eve.payload as IAddConnectionAction).startId === id ||
+                  (eve.payload as IAddConnectionAction).endId === id)
+              ),
+          )
+          .slice(0),
+      };
+    };
+
     while (runner) {
       if (runner.next) {
-        runner.next.event = removeActionsWithId(runner.next.event, payload.id);
+        runner.next.event = removeConnectionsWithID(
+          runner.next.event,
+          payload.id,
+        );
       }
       // if we are checking the diff right before the current, do not modify the prev event.
       // Since that would be deleting something that can be left
       if (runner.prev && (eventDiff.prev && runner !== eventDiff.prev.diff)) {
-        runner.prev.event = removeActionsWithId(runner.prev.event, payload.id);
+        runner.prev.event = removeConnectionsWithID(
+          runner.prev.event,
+          payload.id,
+        );
       }
       runner = runner.next ? runner.next.diff : null;
     }

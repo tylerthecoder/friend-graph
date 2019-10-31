@@ -1,14 +1,17 @@
-import { IGraphState } from "../../../types";
+import { IGraphState } from "../../../../types";
+import { EventDiff } from "../../../events/functions";
 import {
   IAction,
+  IFormData,
+  IInput,
+  IValidationResponse,
+} from "../../functions";
+import {
   IActionFunctions,
   IActionPayload,
   IActionProperty,
   IActionType,
-  IFormData,
-  IInput,
-  IValidationResponse,
-} from "../functions";
+} from "../action-types";
 
 export interface IRmConAction {
   startId: string;
@@ -63,8 +66,9 @@ export default class RmCon implements IActionFunctions {
   }
 
   public validate(
-    _state: IGraphState,
     _action: IActionPayload,
+    _state: IGraphState,
+    _diff: EventDiff,
   ): IValidationResponse {
     return {
       isValid: true,

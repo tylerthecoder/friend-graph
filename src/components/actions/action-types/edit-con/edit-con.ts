@@ -1,55 +1,58 @@
-import { IConnectionType, IGraphState } from "../../../types";
+import { IGraphState } from "../../../../types";
+import { EventDiff } from "../../../events/functions";
 import {
   IAction,
+  IFormData,
+  IInput,
+  IValidationResponse,
+} from "../../functions";
+import {
   IActionFunctions,
   IActionPayload,
   IActionProperty,
   IActionType,
-  IFormData,
-  IInput,
-  IValidationResponse,
-} from "../functions";
+} from "../action-types";
 
-export interface IAddConnectionAction {
+export interface IEditConnectionAction {
   startId: string;
   endId: string;
-  weight: number;
-  type: IConnectionType;
+  dw: number;
 }
 
-export default class AddCon implements IActionFunctions {
+export default class EditCon implements IActionFunctions {
   public properties = [
     { label: "startId", type: IActionProperty.ID },
     { label: "endId", type: IActionProperty.ID },
-    { label: "weight", type: IActionProperty.NUM },
-    { label: "type", type: IActionProperty.CONNECTION_TYPE },
+    { label: "dw", type: IActionProperty.NUM },
   ];
 
   public formElements: IInput[] = [
     { type: "id", id: "startId" },
     { type: "id", id: "endId" },
-    { type: "number", id: "weight" },
-    { type: "number", id: "type" },
+    { type: "number", id: "dw" },
   ];
 
-  public buttonText = "Add Connection";
+  public buttonText = "Edit Connection";
 
   public formToAction(data: IFormData) {
     return {
       startId: data.startId,
       endId: data.endId,
-      weight: data.weight,
-      type: data.type,
+      dw: data.dw,
     };
   }
 
   public applyAction(state: IGraphState, action: IAction): IGraphState {
     const payload = this.getPayload(action);
+    const id = `${payload.startId}:${payload.endId}`;
     return {
       ...state,
       connections: {
         ...state.connections,
-        [`${payload.startId}:${payload.endId}`]: payload,
+        [id]: {
+          ...state.connections[id],
+          weight: state.connections[id].weight + payload.dw,
+        },
       },
     };
   }
@@ -58,36 +61,33 @@ export default class AddCon implements IActionFunctions {
     const payload = this.getPayload(action);
     return {
       ...action,
-      type: IActionType.RM_CON,
+      type: IActionType.EDIT_CON,
       payload: {
-        startId: payload.startId,
-        endId: payload.endId,
+        ...payload,
+        dw: payload.dw * -1,
       },
     };
   }
 
   public validate(
-    _state: IGraphState,
     data: IActionPayload,
+    state: IGraphState,
+    _diff: EventDiff,
   ): IValidationResponse {
-    const payload = this.payloadCast(data);
-    if (payload.startId === payload.endId) {
+    const { startId, endId } = data as IEditConnectionAction;
+    if (state.connections[`${startId}:${endId}`]) {
       return {
-        isValid: false,
-        message: "StartId can't equal EndId",
+        isValid: true,
       };
     } else {
       return {
-        isValid: true,
+        isValid: false,
+        message: "Connection does not exist",
       };
     }
   }
 
   private getPayload(action: IAction) {
-    return action.payload as IAddConnectionAction;
-  }
-
-  private payloadCast(payload: any) {
-    return payload as IAddConnectionAction;
+    return action.payload as IEditConnectionAction;
   }
 }

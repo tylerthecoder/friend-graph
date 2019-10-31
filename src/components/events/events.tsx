@@ -40,7 +40,7 @@ export default function Events(props: Props) {
 
   // using event diff list
   function nextEvent() {
-    let [_, GS, ED] = bustGhost(graphState, eventDiff);
+    let [_found, GS, ED] = bustGhost(graphState, eventDiff);
     [GS, ED] = moveToNextEvent(GS, ED);
     onGraphStateChange(GS);
     onEventDiffChange(ED);

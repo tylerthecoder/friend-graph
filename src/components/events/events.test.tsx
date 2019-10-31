@@ -1,4 +1,5 @@
 import testData from "../../data/test.json";
+import { getNodeIds } from "../../testing/helpers";
 import { IEvent, IGraphState } from "../../types";
 import {
   addGhostNode,
@@ -25,10 +26,6 @@ const NODES_1 = ["tyler"];
 const NODES_2 = ["tyler", "carter"];
 const NODES_3 = ["tyler", "carter", "will"];
 const ALL_NODE_IDS = ["621", "tyler", "carter", "will"];
-
-function getNodeIds(graphState: IGraphState) {
-  return Object.values(graphState.nodes).map((n) => n.id);
-}
 
 describe("Events", () => {
   let ED: EventDiff;

@@ -1,11 +1,11 @@
 import { IEvent, IGraphState } from "../../types";
 import { applyEvent, EventDiff } from "../events/functions";
-import AddCon, { IAddConnectionAction } from "./action-types/add-con";
-import AddNode, { IAddNodeAction } from "./action-types/add-node";
-import EditCon, { IEditConnectionAction } from "./action-types/edit-con";
-import EditNode, { IEditNodeAction } from "./action-types/edit-node";
-import RmCon, { IRmConAction } from "./action-types/rm-con";
-import RmNode, { IRmNodeAction } from "./action-types/rm-node";
+import {
+  getActionFunctions,
+  IActionPayload,
+  IActionProperty,
+  IActionType,
+} from "./action-types/action-types";
 
 export interface IInput {
   id: string;
@@ -16,74 +16,15 @@ export interface IFormData {
   [id: string]: any;
 }
 
-export enum IActionType {
-  ADD_NODE = "ADD_NODE",
-  RM_NODE = "RM_NODE",
-  EDIT_NODE = "EDIT_NODE",
-  ADD_CON = "ADD_CON",
-  EDIT_CON = "EDIT_CON",
-  RM_CON = "RM_CON",
-}
-
-export enum IActionProperty {
-  IMG = "IMG",
-  ID = "ID",
-  NUM = "NUM",
-  CONNECTION_TYPE = "CONNECTION_TYPE",
-}
-
 export interface IValidationResponse {
   isValid: boolean;
   message?: string;
 }
 
-export type IActionPayload =
-  | IAddNodeAction
-  | IRmNodeAction
-  | IEditNodeAction
-  | IAddConnectionAction
-  | IEditConnectionAction
-  | IRmConAction;
-
 export interface IAction {
   type: IActionType;
   id: string;
   payload: IActionPayload;
-}
-
-export interface IActionFunctions {
-  formElements: IInput[];
-  buttonText: string;
-  properties: Array<{
-    label: string;
-    type: IActionProperty;
-  }>;
-  formToAction: (data: IFormData) => IActionPayload;
-  applyAction: (state: IGraphState, action: IAction) => IGraphState;
-  undoAction: (prevState: IGraphState, action: IAction) => IAction;
-  validate: (
-    state: IGraphState,
-    payload: IActionPayload,
-  ) => IValidationResponse;
-  removeActions?: (eventDiffs: EventDiff, action: IAction) => void;
-}
-
-const actionTypesToActions: Map<IActionType, IActionFunctions> = new Map();
-actionTypesToActions.set(IActionType.ADD_NODE, new AddNode());
-actionTypesToActions.set(IActionType.EDIT_NODE, new EditNode());
-actionTypesToActions.set(IActionType.RM_NODE, new RmNode());
-actionTypesToActions.set(IActionType.ADD_CON, new AddCon());
-actionTypesToActions.set(IActionType.EDIT_CON, new EditCon());
-actionTypesToActions.set(IActionType.RM_CON, new RmCon());
-
-function getActionFunctions(actionType: IActionType) {
-  const actionFunctions = actionTypesToActions.get(actionType);
-
-  // all action types should be defined
-  if (!actionFunctions) {
-    throw new Error("Action type does not exist");
-  }
-  return actionFunctions;
 }
 
 export function applyAction(state: IGraphState, action: IAction): IGraphState {
@@ -101,8 +42,9 @@ export function validateAction(
   state: IGraphState,
   type: IActionType,
   payload: IActionPayload,
+  eventDiff: EventDiff,
 ): IValidationResponse {
-  return getActionFunctions(type).validate(state, payload);
+  return getActionFunctions(type).validate(payload, state, eventDiff);
 }
 
 export function cleanupEventDiffs(
@@ -162,6 +104,19 @@ export function formToAction(
   data: { [id: string]: any },
 ) {
   return getActionFunctions(actionType).formToAction!(data);
+}
+
+export function applyActionAndUpdate(
+  action: IAction,
+  GS: IGraphState,
+  ED: EventDiff,
+): [IGraphState, EventDiff] {
+  const tGS = applyAction(GS, action);
+  // clean up the eventList if need be
+  // for example, if I just deleted a node, make sure that all
+  // later connections for that node are also deleted
+  const tED = cleanupEventDiffs(ED, GS, action);
+  return [tGS, tED];
 }
 
 // Helper Functions

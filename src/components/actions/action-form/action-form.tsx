@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
+import { eventDiff } from "../../../testing/test-data";
 import { IGraphState } from "../../../types";
+import { IActionPayload, IActionType } from "../action-types/action-types";
 import {
   getActionInputs,
   getButtonText,
-  IActionPayload,
-  IActionType,
   IFormData,
   IInput,
   validateAction,
@@ -71,6 +71,7 @@ export default function ActionForm(props: Props) {
       graphState,
       actionType,
       formState as IActionPayload,
+      eventDiff,
     );
     if (validation.isValid) {
       onSubmit(formState);
