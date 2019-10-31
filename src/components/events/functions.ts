@@ -1,5 +1,5 @@
 import { IEvent, IEventDiff, IGraphState } from "../../types";
-import { applyAction, undoAction } from "../actions/actions";
+import { applyAction, undoAction } from "../actions/functions";
 
 export const emptyGraphState: IGraphState = {
   time: 0,

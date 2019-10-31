@@ -1,4 +1,4 @@
-import { IAction } from "./components/actions/actions";
+import { IAction } from "./components/actions/functions";
 
 export interface INode {
   x: number;

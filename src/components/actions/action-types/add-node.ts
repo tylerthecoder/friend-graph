@@ -7,7 +7,7 @@ import {
   IActionType,
   IInput,
   IValidationResponse,
-} from "../actions";
+} from "../functions";
 
 export interface IAddNodeAction {
   id: string;

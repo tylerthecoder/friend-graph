@@ -1,15 +1,15 @@
 import React, { useState } from "react";
-import { IGraphState } from "../../../types";
-import { EventDiff } from "../../events/functions";
-import ActionForm from "../action-form/action-form";
-import ActionViewer from "../action-viewer/action-viewer";
+import { IGraphState } from "./../../types";
+import { EventDiff } from "./../events/functions";
+import ActionForm from "./action-form/action-form";
+import ActionViewer from "./action-viewer/action-viewer";
+import "./actions.css";
 import {
   applyAction,
   cleanupEventDiffs,
   formToAction,
   IActionType,
-} from "../actions";
-import "./actions-panel.css";
+} from "./functions";
 
 interface Props {
   graphState: IGraphState;

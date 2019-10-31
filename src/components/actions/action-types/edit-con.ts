@@ -8,7 +8,7 @@ import {
   IFormData,
   IInput,
   IValidationResponse,
-} from "../actions";
+} from "../functions";
 
 export interface IEditConnectionAction {
   startId: string;

@@ -9,7 +9,7 @@ import {
   IFormData,
   IInput,
   IValidationResponse,
-} from "../actions";
+} from "../functions";
 
 export interface IEditNodeAction {
   id: string;

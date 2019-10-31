@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { IGraphState } from "../../types";
-import ActionPanel from "../actions/actions-panel/actions-panel";
+import ActionPanel from "../actions/actions";
 import Events, { initialEventDiffList } from "../events/events";
 import { emptyGraphState, EventDiff } from "../events/functions";
 import Graph from "../graph/graph";

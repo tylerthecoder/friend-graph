@@ -10,7 +10,7 @@ import {
   IInput,
   IValidationResponse,
   removeActionsWithId,
-} from "../actions";
+} from "../functions";
 
 export interface IRmNodeAction {
   id: string;
@@ -39,7 +39,6 @@ export default class RmNode implements IActionFunctions {
     return newState;
   }
 
-  // this is incorrect, maybe pass in the previous graphState and do the {prev, next} thing again
   public undoAction(prevState: IGraphState, action: IAction): IAction {
     const payload = action.payload as IRmNodeAction;
     const node = prevState.nodes[payload.id];

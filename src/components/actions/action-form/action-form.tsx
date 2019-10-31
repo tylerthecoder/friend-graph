@@ -8,7 +8,7 @@ import {
   IFormData,
   IInput,
   validateAction,
-} from "../actions";
+} from "../functions";
 import "./action-form.css";
 import IdSelector from "./action-inputs/id-selector";
 import ImgSelector from "./action-inputs/img-selector";

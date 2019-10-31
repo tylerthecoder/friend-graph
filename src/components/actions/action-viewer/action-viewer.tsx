@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { IAction } from "../actions";
+import { IAction } from "../functions";
 
 import "./action-viewer.css";
 
