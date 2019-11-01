@@ -47,7 +47,7 @@ export default class AddCon implements IActionFunctions {
   }
 
   public applyAction(state: IGraphState, action: IAction): IGraphState {
-    const payload = this.getPayload(action);
+    const payload = action.addConPayload!;
     return {
       ...state,
       connections: {
@@ -58,11 +58,11 @@ export default class AddCon implements IActionFunctions {
   }
 
   public undoAction(_prevState: IGraphState, action: IAction): IAction {
-    const payload = this.getPayload(action);
+    const payload = action.addConPayload!;
     return {
       ...action,
       type: IActionType.RM_CON,
-      payload: {
+      rmConPayload: {
         startId: payload.startId,
         endId: payload.endId,
       },
@@ -87,8 +87,44 @@ export default class AddCon implements IActionFunctions {
     }
   }
 
-  private getPayload(action: IAction) {
-    return action.payload as IAddConnectionAction;
+  public removeActions(eventDiff: EventDiff, action: IAction): void {
+    // look through the actions, if we find another add node with the same id
+    // then change it to either be a edit_node (if the node is in a different place) or just remove it
+
+    let keepGoing = true;
+    let runner: EventDiff | null = eventDiff;
+    while (keepGoing && runner) {
+      if (runner.next) {
+        const newActions = runner.next.event.actions.map(
+          (a): IAction => {
+            const aPayload = a.addConPayload!;
+            const actionPayload = action.addConPayload!;
+            if (
+              a.type === IActionType.ADD_CON &&
+              aPayload.startId === actionPayload.startId &&
+              aPayload.endId === actionPayload.endId
+            ) {
+              keepGoing = false;
+              return {
+                id: a.id,
+                type: IActionType.EDIT_CON,
+                editConPayload: {
+                  startId: aPayload.startId,
+                  endId: aPayload.endId,
+                  dw: actionPayload.weight - aPayload.weight,
+                },
+              };
+            }
+            return { ...action };
+          },
+        );
+        if (!keepGoing) {
+          runner.next.event.actions = newActions;
+        }
+      }
+
+      runner = runner.next ? runner.next.diff : null;
+    }
   }
 
   private payloadCast(payload: any) {

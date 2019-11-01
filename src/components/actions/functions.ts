@@ -1,9 +1,9 @@
-import { IEvent, IGraphState } from "../../types";
+import { IGraphState } from "../../types";
 import { applyEvent, EventDiff } from "../events/functions";
 import {
   getActionFunctions,
   IActionPayload,
-  IActionProperty,
+  IActionPayloads,
   IActionType,
 } from "./action-types/action-types";
 
@@ -21,10 +21,9 @@ export interface IValidationResponse {
   message?: string;
 }
 
-export interface IAction {
+export interface IAction extends IActionPayloads {
   type: IActionType;
   id: string;
-  payload: IActionPayload;
 }
 
 export function applyAction(state: IGraphState, action: IAction): IGraphState {
@@ -117,24 +116,4 @@ export function applyActionAndUpdate(
   // later connections for that node are also deleted
   const tED = cleanupEventDiffs(ED, GS, action);
   return [tGS, tED];
-}
-
-// Helper Functions
-export function removeActionsWithId(event: IEvent, id: string): IEvent {
-  return {
-    ...event,
-    actions: event.actions
-      .filter((action) =>
-        getActionFunctions(action.type)
-          .properties // get all of the action properties of type id
-          // then map to the id property (might be of type keyof T soon)
-          .filter((prop) => prop.type === IActionProperty.ID)
-          .map((input) => input.label)
-          // make sure all of the id like properties are not of the id we are looking for
-          // get rid of this "as any" once I figure out how to correctly type the formElement Ids
-          .every((payloadKey) => (action.payload as any)[payloadKey] !== id),
-      )
-      // copy the actions
-      .map((action) => ({ ...action })),
-  };
 }

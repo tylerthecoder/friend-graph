@@ -21,7 +21,7 @@ export default function ActionViewer(props: Props) {
       {open && (
         <div>
           <h1 onClick={() => setOpen(false)}>{action.type}</h1>
-          <p>data: {JSON.stringify(action.payload)}</p>
+          <p>data: {JSON.stringify(action)}</p>
           <p>ID: {action.id}</p>
         </div>
       )}

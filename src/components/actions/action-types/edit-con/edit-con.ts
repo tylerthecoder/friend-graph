@@ -43,7 +43,7 @@ export default class EditCon implements IActionFunctions {
   }
 
   public applyAction(state: IGraphState, action: IAction): IGraphState {
-    const payload = this.getPayload(action);
+    const payload = action.editConPayload!;
     const id = `${payload.startId}:${payload.endId}`;
     return {
       ...state,
@@ -58,11 +58,11 @@ export default class EditCon implements IActionFunctions {
   }
 
   public undoAction(_prevState: IGraphState, action: IAction): IAction {
-    const payload = this.getPayload(action);
+    const payload = action.editConPayload!;
     return {
       ...action,
       type: IActionType.EDIT_CON,
-      payload: {
+      editConPayload: {
         ...payload,
         dw: payload.dw * -1,
       },
@@ -85,9 +85,5 @@ export default class EditCon implements IActionFunctions {
         message: "Connection does not exist",
       };
     }
-  }
-
-  private getPayload(action: IAction) {
-    return action.payload as IEditConnectionAction;
   }
 }

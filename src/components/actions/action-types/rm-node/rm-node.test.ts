@@ -1,5 +1,6 @@
 import { getNodeIds } from "../../../../testing/helpers";
 import { eventDiff } from "../../../../testing/test-data";
+import { IConnectionType } from "../../../../types";
 import {
   emptyGraphState,
   moveToNextEvent,
@@ -18,20 +19,18 @@ const actionClass = new RmNode();
 const RM_TYLER_NODE_ACTION: IAction = {
   type: IActionType.RM_NODE,
   id: "1",
-  payload: {
+  rmNodePayload: {
     id: "tyler",
-    x: 0,
-    y: 0,
-    img: "",
   },
 };
 
 const ADD_TYLER_CARTER_CONNECTION: IAction = {
   type: IActionType.ADD_CON,
   id: "2",
-  payload: {
+  addConPayload: {
     startId: "carter",
     endId: "tyler",
+    type: IConnectionType.FRIEND,
     weight: 1,
   },
 };

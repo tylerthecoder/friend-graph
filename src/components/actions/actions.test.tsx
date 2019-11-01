@@ -19,7 +19,7 @@ describe("Actions", () => {
     const action: IAction = {
       type: IActionType.RM_NODE,
       id: "0",
-      payload: {
+      rmNodePayload: {
         id: "tyler",
       },
     };

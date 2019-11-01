@@ -41,23 +41,21 @@ export default class AddNode implements IActionFunctions {
   }
 
   public applyAction(state: IGraphState, action: IAction): IGraphState {
-    const payload = this.getPayload(action);
     return {
       ...state,
       nodes: {
         ...state.nodes,
-        [payload.id]: payload,
+        [action.addNodePayload!.id]: action.addNodePayload!,
       },
     };
   }
 
   public undoAction(_prevState: IGraphState, action: IAction): IAction {
-    const payload = this.getPayload(action);
     return {
       ...action,
       type: IActionType.RM_NODE,
-      payload: {
-        id: payload.id,
+      rmNodePayload: {
+        id: action.addNodePayload!.id,
       },
     };
   }
@@ -92,26 +90,28 @@ export default class AddNode implements IActionFunctions {
     let runner: EventDiff | null = eventDiff;
     while (keepGoing && runner) {
       if (runner.next) {
-        const newActions = runner.next.event.actions.map((a) => {
-          const aPayload = a.payload as IAddNodeAction;
-          const actionPayload = action.payload as IAddNodeAction;
-          if (
-            action.type === IActionType.ADD_NODE &&
-            aPayload.id === aPayload.id
-          ) {
-            keepGoing = false;
-            return {
-              ...a,
-              type: IActionType.EDIT_NODE,
-              payload: {
-                id: aPayload.id,
-                dx: aPayload.x - actionPayload.x,
-                dy: aPayload.y - actionPayload.y,
-              },
-            };
-          }
-          return { ...action };
-        });
+        const newActions = runner.next.event.actions.map(
+          (a): IAction => {
+            const aPayload = a.addNodePayload!;
+            const actionPayload = action.addNodePayload!;
+            if (
+              action.type === IActionType.ADD_NODE &&
+              aPayload.id === actionPayload.id
+            ) {
+              keepGoing = false;
+              return {
+                id: a.id,
+                type: IActionType.EDIT_NODE,
+                editNodePayload: {
+                  id: aPayload.id,
+                  dx: aPayload.x - actionPayload.x,
+                  dy: aPayload.y - actionPayload.y,
+                },
+              };
+            }
+            return { ...action };
+          },
+        );
         if (!keepGoing) {
           runner.next.event.actions = newActions;
         }
@@ -119,9 +119,5 @@ export default class AddNode implements IActionFunctions {
 
       runner = runner.next ? runner.next.diff : null;
     }
-  }
-
-  private getPayload(action: IAction) {
-    return action.payload as IAddNodeAction;
   }
 }

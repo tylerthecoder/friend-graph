@@ -24,6 +24,15 @@ export enum IActionType {
   RM_CON = "RM_CON",
 }
 
+export interface IActionPayloads {
+  addNodePayload?: IAddNodeAction;
+  addConPayload?: IAddConnectionAction;
+  rmNodePayload?: IRmNodeAction;
+  rmConPayload?: IRmConAction;
+  editNodePayload?: IEditNodeAction;
+  editConPayload?: IEditConnectionAction;
+}
+
 export type IActionPayload =
   | IAddNodeAction
   | IRmNodeAction

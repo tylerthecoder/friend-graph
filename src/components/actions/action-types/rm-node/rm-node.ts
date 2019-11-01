@@ -12,7 +12,6 @@ import {
   IActionProperty,
   IActionType,
 } from "../action-types";
-import { IAddConnectionAction } from "../add-con/add-con";
 
 export interface IRmNodeAction {
   id: string;
@@ -32,24 +31,21 @@ export default class RmNode implements IActionFunctions {
   }
 
   public applyAction(state: IGraphState, action: IAction): IGraphState {
-    const payload = action.payload as IRmNodeAction;
     const newState = {
       ...state,
       nodes: { ...state.nodes },
     };
-    delete newState.nodes[payload.id];
+    delete newState.nodes[action.rmNodePayload!.id];
     return newState;
   }
 
   public undoAction(prevState: IGraphState, action: IAction): IAction {
-    const payload = action.payload as IRmNodeAction;
-    const node = prevState.nodes[payload.id];
     return {
       ...action,
       type: IActionType.ADD_NODE,
-      payload: {
-        ...node,
-        id: payload.id,
+      addNodePayload: {
+        ...prevState.nodes[action.rmNodePayload!.id],
+        id: action.rmNodePayload!.id,
       },
     };
   }
@@ -66,7 +62,7 @@ export default class RmNode implements IActionFunctions {
 
   // NOTE: This function is not pure. It will alter the eventDiffs that is passed to it.
   public removeActions(eventDiff: EventDiff, action: IAction): void {
-    const payload = this.getPayload(action);
+    const payload = action.rmNodePayload!;
 
     // if possible get the node right before
     let runner: EventDiff | null = eventDiff.prev
@@ -84,8 +80,8 @@ export default class RmNode implements IActionFunctions {
             (eve) =>
               !(
                 invalidEventTypes.includes(eve.type) &&
-                ((eve.payload as IAddConnectionAction).startId === id ||
-                  (eve.payload as IAddConnectionAction).endId === id)
+                (eve.addConPayload!.startId === id ||
+                  eve.addConPayload!.endId === id)
               ),
           )
           .slice(0),
@@ -109,9 +105,5 @@ export default class RmNode implements IActionFunctions {
       }
       runner = runner.next ? runner.next.diff : null;
     }
-  }
-
-  private getPayload(action: IAction) {
-    return action.payload as IRmNodeAction;
   }
 }

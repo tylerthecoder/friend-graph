@@ -9,7 +9,7 @@ const actionClass = new AddNode();
 const ADD_TYLER_NODE_ACTION: IAction = {
   type: IActionType.ADD_NODE,
   id: "123",
-  payload: {
+  addNodePayload: {
     id: "tyler",
     x: 200,
     y: 200,
@@ -18,14 +18,14 @@ const ADD_TYLER_NODE_ACTION: IAction = {
 };
 
 describe("Add Node", () => {
-  it("Applies Action", () => {
+  it("Updates other add_nodes with the same id", () => {
     let [found, GS, ED] = moveToTime(emptyGraphState, eventDiff, TIME_0);
     [GS, ED] = applyActionAndUpdate(ADD_TYLER_NODE_ACTION, GS, ED);
 
     const expectedAction: IAction = {
       type: IActionType.EDIT_NODE,
       id: "1",
-      payload: {
+      editNodePayload: {
         id: "tyler",
         dx: -100,
         dy: -100,

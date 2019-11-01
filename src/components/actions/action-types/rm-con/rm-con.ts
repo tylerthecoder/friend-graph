@@ -39,7 +39,7 @@ export default class RmCon implements IActionFunctions {
   }
 
   public applyAction(state: IGraphState, action: IAction): IGraphState {
-    const payload = action.payload as IRmConAction;
+    const payload = action.rmConPayload!;
     const id = `${payload.startId}:${payload.endId}`;
     const newState = {
       ...state,
@@ -52,13 +52,13 @@ export default class RmCon implements IActionFunctions {
   }
 
   public undoAction(prevState: IGraphState, action: IAction): IAction {
-    const payload = action.payload as IRmConAction;
+    const payload = action.rmConPayload!;
     const id = `${payload.startId}:${payload.endId}`;
     const connection = prevState.connections[id];
     return {
       ...action,
       type: IActionType.ADD_CON,
-      payload: {
+      addConPayload: {
         ...connection,
         ...payload,
       },

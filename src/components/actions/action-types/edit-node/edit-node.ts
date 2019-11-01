@@ -43,7 +43,7 @@ export default class EditNode implements IActionFunctions {
   }
 
   public applyAction(state: IGraphState, action: IAction): IGraphState {
-    const payload = this.getPayload(action);
+    const payload = action.editNodePayload!;
     return {
       ...state,
       nodes: {
@@ -58,11 +58,11 @@ export default class EditNode implements IActionFunctions {
   }
 
   public undoAction(_prevState: IGraphState, action: IAction): IAction {
-    const payload = this.getPayload(action);
+    const payload = action.editNodePayload!;
     return {
       ...action,
       type: IActionType.EDIT_NODE,
-      payload: {
+      editNodePayload: {
         ...payload,
         dx: payload.dx * -1,
         dy: payload.dy * -1,
@@ -120,9 +120,5 @@ export default class EditNode implements IActionFunctions {
     //     ].next!.actions.filter((a) => !isSameAction(a));
     //   }
     // }
-  }
-
-  private getPayload(action: IAction) {
-    return action.payload as IEditNodeAction;
   }
 }
