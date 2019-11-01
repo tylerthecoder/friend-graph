@@ -79,32 +79,46 @@ export default class AddNode implements IActionFunctions {
       };
     }
 
-    let runner: EventDiff | null = diff;
-    let flag = false;
-    while (runner && !flag) {
-      if (
-        runner.next &&
-        runner.next.event.actions.some(
-          (a) =>
-            a.type === IActionType.ADD_NODE &&
-            (a.payload as IAddNodeAction).id === payload.id,
-        )
-      ) {
-        flag = true;
-      }
-      runner = runner.next ? runner.next.diff : null;
-    }
-
-    if (flag) {
-      return {
-        isValid: false,
-        message: "Id already exists (Added later in the timeline)",
-      };
-    }
-
     return {
       isValid: true,
     };
+  }
+
+  public removeActions(eventDiff: EventDiff, action: IAction): void {
+    // look through the actions, if we find another add node with the same id
+    // then change it to either be a edit_node (if the node is in a different place) or just remove it
+
+    let keepGoing = true;
+    let runner: EventDiff | null = eventDiff;
+    while (keepGoing && runner) {
+      if (runner.next) {
+        const newActions = runner.next.event.actions.map((a) => {
+          const aPayload = a.payload as IAddNodeAction;
+          const actionPayload = action.payload as IAddNodeAction;
+          if (
+            action.type === IActionType.ADD_NODE &&
+            aPayload.id === aPayload.id
+          ) {
+            keepGoing = false;
+            return {
+              ...a,
+              type: IActionType.EDIT_NODE,
+              payload: {
+                id: aPayload.id,
+                dx: aPayload.x - actionPayload.x,
+                dy: aPayload.y - actionPayload.y,
+              },
+            };
+          }
+          return { ...action };
+        });
+        if (!keepGoing) {
+          runner.next.event.actions = newActions;
+        }
+      }
+
+      runner = runner.next ? runner.next.diff : null;
+    }
   }
 
   private getPayload(action: IAction) {
